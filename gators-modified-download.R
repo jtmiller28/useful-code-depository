@@ -44,7 +44,7 @@ accepted_name_v_filestyle = gsub(" ", "-", accepted_name_v)
 ## Download: 
 ### First, due to APIs having issues with overpinging we need a retry function. This function will attempt to download function gators_donwload(), but in the case of failure will retry after a cooldown period. If all attempts fail, an error handler is created denoting the output of this issue 
 retry_download <- function(i, retry_count) { # Build a retry_downloader fxn that proceeds to try if an API error occurs
-  if (retry_count >= 2) { # Allow up to 11 attempts
+  if (retry_count >= 11) { # Allow up to 11 attempts
     failed_names_holder[[i]] <<- c(accepted_name_v[[i]], "Maximum retries exceeded", format(Sys.time(), "%a %b %d %X %Y")) # Customize the error handler 
     return(NULL) # Null otherwise 
   }
