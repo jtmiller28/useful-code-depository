@@ -78,7 +78,7 @@ for(i in 1:length(accepted_name_v)){
   gators.download <- retry_download(i, 0) # 0 intializes the download count
   path <- "./" # Customize this if you have a desired data dir
   write.table(gators.download,
-              paste0(path, accepted_name_v[[i]], ".txt"),
+              paste0(path, accepted_name_v_filestyle[[i]], ".txt"),
               row.names = FALSE, 
               sep = "\t", 
               quote = FALSE)
