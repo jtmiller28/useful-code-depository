@@ -48,13 +48,13 @@ print("finished constructing mean list")
 
 # Extract these data and store
 for(i in 1:length(mean_lists)){
-write.csv(mean_lists[[i]], paste0(data_dir, "/mean-extraction-for-", n_i[[i]], ".csv"))
+write.csv(mean_lists[[i]], paste0(data_dir, "mean-extraction-for-", n_i[[i]], ".csv"))
 }
 
 print("finished writing mean datasets")
 # now Plot the histogram of the sampled means, for each of the n_i's 
 for(i in 1:length(mean_lists)){
-  png(filename=paste0(plot_dir,"/plot-with-", n_i[[i]], "-samples", ".png"), width = 600, height = 600)
+  png(filename=paste0(plot_dir,"plot-with-", n_i[[i]], "-samples", ".png"), width = 600, height = 600)
   hist(mean_lists[[i]], main = paste0("Histogram of n_i = ", n_i[[i]]))
 
   dev.off()
