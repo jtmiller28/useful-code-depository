@@ -2,6 +2,7 @@
 
 # Set up your directory calls from the shell script
 setwd("/blue/soltis/millerjared/useful-code-depository/hypergator")
+args = commandArgs(trailingOnly=TRUE)
 data_dir <- args[1]
 plot_dir <- args[2]
 
