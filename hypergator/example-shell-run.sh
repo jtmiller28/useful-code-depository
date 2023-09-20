@@ -7,7 +7,7 @@
 #SBATCH --nodes=1                        # Run all processes on a single node
 #SBATCH --ntasks=1                       # Run a single task
 #SBATCH --cpus-per-task=1                # Number of CPU cores per task
-#SBATCH --mem=2gb                        # Job memory request
+#SBATCH --mem=3gb                        # Job memory request
 #SBATCH --time=00-01:00:00               # Time limit days-hrs:min:sec
 #SBATCH --qos=soltis-b
 pwd; hostname; date
