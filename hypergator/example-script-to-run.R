@@ -1,11 +1,12 @@
 ### A simple script to showcase how to call an Rscript using a shell SLURM Request. 
 
 # Set up your directory calls from the shell script
+setwd("/blue/millerjared/useful-code-depository/hypergator/")
 data_dir <- args[1]
 plot_dir <- args[2]
 
-# data_dir <- "/home/jt-miller/Soltis-Lab/useful-code/useful-code-depository/hypergator/data/" # for reference purposes
-# plot_dir <- "/home/jt-miller/Soltis-Lab/useful-code/useful-code-depository/hypergator/plots/" # for reference purposes
+# data_dir <- "/blue/millerjared/useful-code-depository/hypergator/data/" # for reference purposes
+# plot_dir <- "/blue/millerjared/useful-code-depository/hypergator/plots/" # for reference purposes
 
 # Simulation experiment: Law of Large numbers: Increasing the sample size should get us closer to the theoretical sample mean of a population of samples
 
@@ -28,6 +29,7 @@ for(i in 1:length(n_i)){ # outer loop, to go through the possible sample sizes o
   holding_list[[i]] <- holding_v # store this within our holding list 
 }
 
+print("finished sampling normal distribution and building holding list")
 
 mean_lists <- list()
 for(j in 1:length(n_i)){
@@ -41,10 +43,14 @@ for(j in 1:length(n_i)){
   mean_lists[[j]] <- mean_storage
 } # end of outer loop 
 
+print("finished constructing mean list")
+
 # Extract these data and store
 for(i in 1:length(mean_lists)){
 write.csv(mean_lists[[i]], paste0(data_dir, "/mean-extraction-for-", n_i[[i]], ".csv"))
 }
+
+print("finished writing mean datasets")
 # now Plot the histogram of the sampled means, for each of the n_i's 
 for(i in 1:length(mean_lists)){
   png(filename=paste0(plot_dir,"/plot-with-", n_i[[i]], "-samples", ".png"), width = 600, height = 600)
@@ -53,5 +59,5 @@ for(i in 1:length(mean_lists)){
   dev.off()
   
 }
-
+print("finished plotting")
 
