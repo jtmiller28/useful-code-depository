@@ -4,8 +4,8 @@
 data_dir <- args[1]
 plot_dir <- args[2]
 
-data_dir <- "/home/jt-miller/Soltis-Lab/useful-code/useful-code-depository/hypergator/data/"
-plot_dir <- "/home/jt-miller/Soltis-Lab/useful-code/useful-code-depository/hypergator/plots/"
+# data_dir <- "/home/jt-miller/Soltis-Lab/useful-code/useful-code-depository/hypergator/data/" # for reference purposes
+# plot_dir <- "/home/jt-miller/Soltis-Lab/useful-code/useful-code-depository/hypergator/plots/" # for reference purposes
 
 # Simulation experiment: Law of Large numbers: Increasing the sample size should get us closer to the theoretical sample mean of a population of samples
 
