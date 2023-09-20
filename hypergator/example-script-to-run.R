@@ -1,7 +1,7 @@
 ### A simple script to showcase how to call an Rscript using a shell SLURM Request. 
 
 # Set up your directory calls from the shell script
-setwd("/blue/millerjared/useful-code-depository/hypergator/")
+setwd("/blue/millerjared/useful-code-depository/hypergator")
 data_dir <- args[1]
 plot_dir <- args[2]
 
