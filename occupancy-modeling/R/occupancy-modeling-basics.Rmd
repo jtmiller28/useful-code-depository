@@ -1,0 +1,90 @@
+---
+title: "occupancy-modeling-basics"
+author: "jt-miller"
+date: "2023-11-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Occupancy Modeling Basics:
+Based on James Paterson's Occupancy Model introduction lessons: https://jamesepaterson.weebly.com/blog/introduction-to-occupancy-models-in-r
+
+#### What are Occupancy Models
+Occupancy Models estimate where species occur (a biological process) while accounting for imperfect detection (an observation process). The reason for this is that there will always be a probability of detection associated with a myraid of factors such as observation variation, cryptic species, conditions, etc... <br> 
+Without accounting for imperfect detection, our estimates of species presence and absence (P/A) for sites can be biased. <br>
+
+Basic Occupancy Models estimate two parameters 
+$$
+p_i,_t \\
+\Psi
+$$
+P sub i and t represents the probability of finding a species at time t if it is at site i 
+Psi represents the probability that a species occurs at site i 
+
+#### Building Basic Occupancy Models with the Unmarked Package
+We'll be first looking at a single-season model with the assumption that the occupancy status (P/A) does not change during the study. This means that a species is _always_ either present or absent at each site, even when it is not detected. Dynamic occupancy models will touch on allowing occupancy status at a site to change through colonization and extinction. 
+
+First we need data that describes on which surveys a species was detected. Using the Sample data that James Paterson simulated, lets use the unmarked package which has a function for organizing the detection data & covariates. 
+```{r}
+library(unmarked)
+
+# Simulated detection history (100 sites with 10 visits each)
+detection_history <- read.csv("/home/jt-miller/Soltis-lab/useful-code-depository/occupancy-modeling/data/raw/detection_history.csv",
+                              row.names = "X" # First variable is actually a row labeler not data
+                              )
+
+# Take a look at the data 
+head(detection_history)
+```
+Set up the data
+```{r}
+# Use the fxn unmarkedFrameOccu to make the data compatible for occupancy detections
+
+sample.unmarkedFrame_simple <- unmarkedFrameOccu(
+  y = as.matrix(detection_history) # y is a matrix with observed detection history
+  # 0s and 1s one row per site, one column per survey
+)
+
+summary(sample.unmarkedFrame_simple) # give a nice little summary about our simulated data
+```
+Recall the two parameters of interest: _Detection_ & _Occupancy_. <br>
+Each of these parameters is estimated using a linear model on the logit scale, which bounds the real estimate between 0 and 1. We need to bound the estimates becuase the probabilities must fall between 0 and 1. <br> 
+
+When building our occupancy model, we are going to specify that we will start with an *intercept-only model* where there is only one estimate for detection probability and one estimate for occupancy probability. An intercept-only model in this case will say that the probability of a species being present is the same at each site, and the probability of detecting a species is the same during each survey
+```{r}
+# Build the basic single-season occupancy model with intercepts only (one estimate for detection, one for occupancy)
+occu.m1 <- occu(formula = ~1 ~1, # detection covariate first, occupancy covariate second
+                data = sample.unmarkedFrame_simple)
+
+summary(occu.m1) # Shows the AIC, estimates on logit scale the SE and z-scores
+```
+Accounting for confidence intervals (95% CI) to get a real estimate of occupancy
+```{r}
+predict(occu.m1, 
+        newdata = data.frame(site =1),
+        type = "state")
+```
+And same thing for a real estimate of detection
+```{r}
+predict(occu.m1, 
+        newdata = data.frame(site =1),
+        type = "det")
+```
+Find equivalent to reverse logit
+```{r}
+boot::inv.logit(coef(occu.m1)[1]) # real estimate of occupancy
+boot::inv.logit(coef(occu.m1)[2]) # real estimate of detection
+```
+Here, we've built a simple single season occupancy model and extracted the real parameters predicting the occupancy probability (~0.62) and the detection probability (~0.48). <br> 
+This means that we predict the species will occur in 62% of the sites, and that our ability to detect a species when present will be about 48% of the time. <br>
+
+This simplistic model lacks reality however; as we know that a species will be more likely to inhabit particular sites based on the underlying characteristics of that site. To accomplish this, we can add covariates to the model. 
+
+#### Adding Covariates for Occupancy and Detection
+There are two type of covariates: 
+1. Observation-level covariates, these will differ for every combination of site & survey (such as the search effort per visit per site for example). Each one of these variables should be included as an element of a list, and each element of the list should have a row for every site and a column for every survey. For this example we will have 100 rows and 10 columns
+
+2. Site-level covariates, these do not change through time, but will differ by site. E.g. would be measures of habitat type or other landscape metrics. Site covariates should be included in a df with a row for every site and column for each site variable. 
