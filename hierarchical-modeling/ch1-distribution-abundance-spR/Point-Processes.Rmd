@@ -1,0 +1,15 @@
+---
+title: "Point-Processes"
+author: "jt-miller"
+date: "2023-11-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 1.1 Point Processes, Distribution, Abundance, and Species Richness 
+
+#### Point Patterns 
+The outcome of stochastic processes known as point processes, we describe these with statistic models called point process models (PPMs). The metrics used in ecology to measure biodiversity: distribution, abundance, and species richness are all derivations of the fundamental point patterns. PPMs treat both the number and location of discrete points as random quantities governed by an underlying, continuous intensity field. The intensity is the expected number for points per unit area in some study area and is a modeled parameter. 
