@@ -2,7 +2,7 @@
 # R program to calculate ML estimates for the blood type proportions
 # a, b and o in the multinomial model derived from the H-W proportions of  
 # human blood types
-# Null Model:  Y1,Y2,Y3,Y4 ~ multinomial(n,p1,p2,p3,p4)
+# Null Model:  Y1,Y2,Y3,Y4 ~ multinomial(n,p1,p2,p3,p4) #p1,p2,p3,p4 are the proportions of the blood types, under hardy weinberg its a + b + o
 # p1 = a*a + 2*a*o
 # p2 = b*b + 2*b*o
 # p3 = 2*a*b
@@ -15,11 +15,11 @@
 # We will minimize this function using a numerical algorithm:  The nelder-mead simplex.
 negloglike.Ho <- function(guess, ntot, obs.counts){
 	
-	a <- 1/(1+ exp(-guess[1])) # constrains a between 0 and 1
+	a <- 1/(1+ exp(-guess[1])) # constrains a between 0 and 1 #inverse logit fxn
 	b <- 1/(1+ exp(-guess[2])) # constrains b between 0 and 1
-	o <- 1-a-b
-	arefreqspos <- sum(c(a,b,o) > 0)
-	if(arefreqspos != 3){return(.Machine$double.xmax)}else{
+	o <- 1-a-b # a + b + o = 1, has issues on particular guesses so see below
+	arefreqspos <- sum(c(a,b,o) > 0) # Ask are the frequencies Positive
+	if(arefreqspos != 3){return(.Machine$double.xmax)}else{ # Return Largest number in R , dont get stuck on the negatives by feeding it a ridiclously large number
 		
 		p1 <- a*a + 2*a*o
 		p2 <- b*b + 2*b*o
@@ -62,7 +62,7 @@ obs.counts <- c(y1,y2,y3,y4)
 # can have multiple peaks and the Nelder-Mead can get stuck in a sub-obtimal peak. That's why
 # re-starting the Nelder-Mead on the final values if often useful.  But for this problem, a simple
 # search is enough.
-guess1 <- c(log(0.33) - log(1-0.33), log(0.33) - log(1-0.33))
+guess1 <- c(log(0.33) - log(1-0.33), log(0.33) - log(1-0.33)) # Reverse transform (1/(1+e^-theta)) solve for theta, log-odds
 mlest  <- optim(par=guess1, fn= negloglike.Ho, method="Nelder-Mead", ntot=n,obs.counts=obs.counts)
 ab.mles<- 1/(1+exp(-mlest$par))
 a.mle <- ab.mles[1]

@@ -88,3 +88,36 @@ There are two type of covariates:
 1. Observation-level covariates, these will differ for every combination of site & survey (such as the search effort per visit per site for example). Each one of these variables should be included as an element of a list, and each element of the list should have a row for every site and a column for every survey. For this example we will have 100 rows and 10 columns
 
 2. Site-level covariates, these do not change through time, but will differ by site. E.g. would be measures of habitat type or other landscape metrics. Site covariates should be included in a df with a row for every site and column for each site variable. 
+
+```{r}
+# Load the Covariate Data
+effort <- read.csv("/home/jt-miller/Soltis-lab/useful-code-depository/occupancy-modeling/data/raw/effort.csv",
+                   row.names = "X")
+observers <- read.csv("/home/jt-miller/Soltis-lab/useful-code-depository/occupancy-modeling/data/raw/observers.csv",
+                   row.names = "X")
+site_cov <- read.csv("/home/jt-miller/Soltis-lab/useful-code-depository/occupancy-modeling/data/raw/site_cov.csv",
+                   row.names = "X")
+
+# Now build a new unmarkedFramOccu
+sample.unmarkedFrame_cov <- unmarkedFrameOccu(
+  y = as.matrix(detection_history), # Recall that y is a matrix with observed detection history 
+  # 0s and 1s, one row per site, one column per survey 
+  obsCovs = list(effort = effort, # observation covariates in a list, each variable has site rows times survey columns
+                 observers = observers),
+  siteCovs = site_cov # siteCovs = df with site rows times column variables 
+)
+
+summary(sample.unmarkedFrame_cov)
+
+```
+Now we can incorporate the covariates in building our model with occu() <br>
+The names in our formula must be exactly the same as the sample.unmarkedFrame_cov, like other linear models it will follow the covention (+ for additive effects, : for an interaction, and * for main effect plud an interaction)
+```{r}
+occu.m2 <-occu(formula = ~effort + observers # the detection formula/covariates
+               ~ forest + agri, # the occupancy formula/covariates second  
+               data = sample.unmarkedFrame_cov
+               )
+
+summary(occu.m2)
+```
+
