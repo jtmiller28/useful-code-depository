@@ -9,7 +9,87 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+library(unmarked)
+library(AHMbook)
+```
+
+
 ### 1.1 Point Processes, Distribution, Abundance, and Species Richness 
 
 #### Point Patterns 
-The outcome of stochastic processes known as point processes, we describe these with statistic models called point process models (PPMs). The metrics used in ecology to measure biodiversity: distribution, abundance, and species richness are all derivations of the fundamental point patterns. PPMs treat both the number and location of discrete points as random quantities governed by an underlying, continuous intensity field. The intensity is the expected number for points per unit area in some study area and is a modeled parameter. 
+The outcome of stochastic processes known as point processes, we describe these with statistic models called point process models (PPMs). The metrics used in ecology to measure biodiversity: distribution, abundance, and species richness are all derivations of the fundamental point patterns. PPMs treat both the number and location of discrete points as random quantities governed by an underlying, continuous intensity field. The intensity is the expected number for points per unit area in some study area and is a modeled parameter. <br> 
+
+#### Spatial Point Patterns with Distribution and Abundance
+Distribution and Abundance metrics are really just areal summaries of the spatial point patterns aggregated and observed per taxa. The above function sim.fn() is a simulation that allows us to experiment with point processes and how the underlying patterns effect distributions/abundance measures. The key feature here is *intesity* of the pattern, which is something we'd expect to be the result of the biology (uncontrollable). Cell size is how big the cells making up the grid are, this is controllable (or dictated by the survey strategy). 
+```{r}
+sim.fn(quad.size = 10, cell.size = 1, intensity = 1)
+```
+This function will simulate the taxa locations in grid cells forming a quadrat with a total length (arbitrary units) equal to that of quad.size according to a Poisson process where individuals are randomly distributed in space. This process is characterized by **constant** intensity, which will be the average number of the taxa per unit area. <br> 
+
+E.g. 
+```{r}
+set.seed(82) # Set the seed for reproducible results 
+tmp <- sim.fn(quad.size = 16, cell.size = 2, intensity = 0.5)
+```
+As we may not in the graphical output above, there is a deterministic relationship between a point pattern with abundance and distribution. Distribution really is just a certain spatial pattern of P/As. <br> 
+
+Breakdown: <br> 
+- In order to find abundance and occurrence, one must somehow spatially discretize the data aka make sites. Each site is represented by one cell throughout the entire grid. Think of the background continuous space as your geographic area where the study is taking place, and the cell be some breakdown of the space. <br>
+- Once the space is broken down into cells we can then think of Abundance (N) as the number of points falling into each site (cell). <br>
+- We can also define occurrence (z) by this state of abundance (i.e. if N = 0, z = 0, if N >= 1, z = 1). This is why occurrence can be referred to as a "poor man's abundance" in terms of data structure. <br>
+
+This brings up an interesting deterministic relationship, that is if we know the full pattern of the spatial points, we can infer abundance, and if we know abundance, we can infer occurrence. The issue is going backwards, knowing presence/absence does not allow you to perfectly infer the abundance distribution, though there are methods for making statistical inferences from the P/A data. <br> 
+
+To describe spatial abundance from the underlying spatial point pattern, we can think of summarizing the mean and variance of individual values of N in each cell. Given the spatial point pattern arises with uniform intensity, the resulting numbers N will follow a Poisson distribution, with a mean of lambda, where lambda is estimated by the mean abudnace (or density) over the 256 cells. In turn, the spatial P/A data will follow a Bernoilli distribution with a success parameter that corresponds to the expected proportions of occupied cells. <br> 
+
+#### Some debated features of Abundance & Distribution, and Zero-Inflated Models 
+In real life this scenario of uniform intesity derived from a Poisson distribution is unlikely, as the underlying enviromental heterogeniety would suggest that the underlying biology of the taxa of interest cannot reside there. Furthermore, when modeling abundance and occurrence we often observe that there are in fact too many zeros compared to what our models show (absent from more sites than we'd expect). This has lead to some lines of thought being that the "distribution" is something of the nature of a potential distirbution area where species *could* occur in principle (the fundemental niche), and "abundance" describing the number of individuals only at sites that belong to the distributional area. From here, they adopt zero-inflated Poisson or some other zero-infalted models to describe the now distinct processes of "distribution" and "abundance". <br> 
+
+The present authors of AHM argue that there is little reason to do this, as the two concepts of distribution and abundance are related by their inherit relationship (i.e. rarely there are two distinct mechanisms for how these metrics arise). Instead the authors argue that the reason for the over abundance of 0s in the real data as compared to the model is our inadequate understanding of the system (i.e. not including all the necessary covariates). If we had all of these covariates, the authors argue that we could model this by using the Poisson (or negative binomial etc.) mean. <br> 
+
+So what are those exceptions where two distinct mechansims can arise? Well we can think of island colonization in how it relates to abundance: <br>
+1. Any abundance (N) greater than zero requires that colonization of the island occurrend, which is a stochastic process that can be described with a binary outcome (the island is colonized: 1, the island is not colonized: 0). <br>
+2. Abundance (N) is then determined post colonization. <br> 
+
+In this way, we can see that there are two different underlying mechanisms at play to detmerine abundance. Here would be a good case for zero-inflated abundance models. <br>
+
+Generally however, zero-inflated models are really just modeling tricks made up to accomidate our  lack of perfect knowledge of the covariates that are really governing abundance. So its important to make the distinction: we are happy to adopt zero-inflated models in order to account for the resulting lack of fit, but we do **not** try to claim that there is much underlying biology that is governing the zero-inflation component of the model. <br>
+
+**TLDR**: Unless one can identify a distinct mechanisms that would contribute to more than one distinct process that divides how abundance and distribution arise, it is likely that the over abundance of zeros in the real data just represents our inadequate knowledge underlying the abundance. This is OK, we can still rely on zero-infalted models to make up for our lack of fuller understanding, however; we should not argue that these zeros are a result of the underlying biology for the system. 
+
+#### Back to the sample simulation
+```{r}
+tmp
+```
+First note that the **intensity** is set to 0.5. Knowing that there are 256 cells, we should then expect that there would bee 128 cells occupied. (Another way of thinking of this is that its a 16x16 matrix, so M = 16^2 * Intensity = 128). 
+
+$$
+M = QuadrantSize * Intensity \\
+M = 16^2 * Intensity = 128
+$$
+However! This is not what we observe, instead we see that M = 114. This is because of the randomness in the number of points that is inherit from the point pattern. <br> 
+$$
+M_r = 114
+$$
+At the chosen cell size, the abundance in the 256 cells varies between 0 to 6 individuals and the mean realized abundance is 1.78, while under expectation we would have expected lambda = 2^2 * 0.5 = 2 with the difference arising from sampling variability. The variance on local abundance is 1.86, while really we should expect 2 under a Poisson distribution with an expected value of 2. <br> 
+$$
+\lambda = cellsize^2 * intensity \\
+\lambda = 2^2 * 0.5 = 2 \\
+\lambda_r = 1.78
+$$
+For the realized proportion of occupied cells (also known as the occupancy) we have 0.83, where under the Poisson process with constant intensity we would expect: 1 minus the expected proportion of zero abundance: 
+$$
+\psi = 1 - exp(-\lambda) \approx 0.86
+$$
+Note that the expected and realized values differ by sampling variability (if we reran the simulations many times, the average result would be closer and closer to that of the expected values). <br> 
+
+Through Simulation, lets take a look at sample site size
+```{r}
+tmp <- sim.fn(quad.size = 10, cell.size = 1, intensity = 0.5)
+tmp <- sim.fn(quad.size = 10, cell.size = 2, intensity = 0.5)
+tmp <- sim.fn(quad.size = 10, cell.size = 5, intensity = 0.5)
+tmp <- sim.fn(quad.size = 10, cell.size = 10, intensity = 0.5)
+```
+
+
