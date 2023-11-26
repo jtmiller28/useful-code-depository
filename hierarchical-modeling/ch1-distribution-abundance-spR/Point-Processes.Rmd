@@ -91,5 +91,22 @@ tmp <- sim.fn(quad.size = 10, cell.size = 2, intensity = 0.5)
 tmp <- sim.fn(quad.size = 10, cell.size = 5, intensity = 0.5)
 tmp <- sim.fn(quad.size = 10, cell.size = 10, intensity = 0.5)
 ```
+# Effect of grain size of study on abundance and occupancy (holding intensity constant)
+```{r}
+tmp <- sim.fn(quad.size = 10, cell.size = 1, intensity = 0.5)
+tmp <- sim.fn(quad.size = 10, cell.size = 2, intensity = 0.5)
+tmp <- sim.fn(quad.size = 10, cell.size = 5, intensity = 0.5)
+tmp <- sim.fn(quad.size = 10, cell.size = 10, intensity = 0.5)
 
+```
+Note the pattern here: if quadrat size remains constant, but we increase the cell size (grain) then the mean abundance (N) and proportion of occupied cells (psi) increases as well. Logically if the cell size is equal to the quadrat size, we'd expect that the occupancy would = 100%. 
+
+Effect of intensity of point pattern (intensity) on abundance and occupancy
+```{r}
+tmp <- sim.fn(intensity = 0.1) # the defaults of quad.size = 10 and cell.size = 1
+tmp <- sim.fn(intensity = 1)
+tmp <- sim.fn(intensity = 5)
+tmp <- sim.fn(intensity = 10)
+```
+When the intensity is low, the occurrence and abundance patterns will be nearly identical, as its rare that a cell will be inhabited by more than one individual. The greater the intensity, the less infomative the spatial pattern of occurrence will be about hte spatial variation in pop density. 
 
