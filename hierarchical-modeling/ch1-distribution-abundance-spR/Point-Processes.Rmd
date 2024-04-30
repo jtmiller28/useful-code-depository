@@ -16,7 +16,6 @@ library(AHMbook)
 
 
 ### 1.1 Point Processes, Distribution, Abundance, and Species Richness 
-
 #### Point Patterns 
 The outcome of stochastic processes known as point processes, we describe these with statistic models called point process models (PPMs). The metrics used in ecology to measure biodiversity: distribution, abundance, and species richness are all derivations of the fundamental point patterns. PPMs treat both the number and location of discrete points as random quantities governed by an underlying, continuous intensity field. The intensity is the expected number for points per unit area in some study area and is a modeled parameter. <br> 
 
@@ -97,7 +96,6 @@ tmp <- sim.fn(quad.size = 10, cell.size = 1, intensity = 0.5)
 tmp <- sim.fn(quad.size = 10, cell.size = 2, intensity = 0.5)
 tmp <- sim.fn(quad.size = 10, cell.size = 5, intensity = 0.5)
 tmp <- sim.fn(quad.size = 10, cell.size = 10, intensity = 0.5)
-
 ```
 Note the pattern here: if quadrat size remains constant, but we increase the cell size (grain) then the mean abundance (N) and proportion of occupied cells (psi) increases as well. Logically if the cell size is equal to the quadrat size, we'd expect that the occupancy would = 100%. 
 
@@ -109,4 +107,22 @@ tmp <- sim.fn(intensity = 5)
 tmp <- sim.fn(intensity = 10)
 ```
 When the intensity is low, the occurrence and abundance patterns will be nearly identical, as its rare that a cell will be inhabited by more than one individual. The greater the intensity, the less infomative the spatial pattern of occurrence will be about hte spatial variation in pop density. 
+
+```{r}
+simrep <- 100 # Number of simulation reps
+grain <- c(0.1, 0.2, 0.25, 0.5, 1, 2) # values to be fed into the cell.size argument 
+int <- seq(0.1, 3, 6) # values will be fed into 'lambda' argument
+n.levels <- length(grain) # number of factor levels in simu
+results <- array(NA, dim=c(n.levels, n.levels, 2, simrep)) # 4D array
+
+for(i in 1:n.levels){
+  for(j in 1:nlevels){
+    for(k in 1:simrep){
+      cat("\nDim 1:", i, ", Dim 2:", j, ", Simrep", k)
+      tmp <- sim.fn(cell.size=grain[i], intensity=int[j], show.plot = F)
+      results[i,j,1:2,k] <- c(mean(tmp$N), tmp$psi)
+    }
+  }
+}
+```
 

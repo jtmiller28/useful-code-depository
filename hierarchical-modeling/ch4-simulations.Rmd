@@ -1,0 +1,147 @@
+---
+title: "ch4-simulations"
+author: "jt-miller"
+date: "2024-04-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Generation of a typical point count dataset
+The great tit
+
+Assume the following ecological model generates the data for the great tit. The abundance of the great tit decreases linearly with elevation and increases linearly with forest cover, and these two covariates interact negatively. 
+$$
+N_i \sim Poisson(\lambda_i) \\
+log(\lambda_i) = \beta_0 + \beta_1*elev_i + \beta_2*forest_i + \beta_3*elev_i*forest_i
+$$
+Assume that the observation process is governed by imperfect detection only, and that false-positives are absent from the data. Detection will be based on the detection probability *p*, which is dependent on the one site covatiate elevation and on one site sampling covariate wind speed. We will ignore adding the interaction effect between windspeed and elevation. 
+$$
+C_{ij} \sim Binomial(N_i,p_{ij}) \\
+
+logit(p_{ij}) = \alpha_0 + \alpha_1*elev_i + \alpha_2*wind_{ij} + \alpha_3*elev_i*wind_{ij}
+$$
+The data will be simulated from the inside out and from top to bottom <br>
+1. We choose the sample size and create values for the covariates <br>
+2. We choose parameter values for the ecological model, assemble the expected abundance lambda, and draw the Poisson random variable. <br>
+3. Third we choose parameters for the observation model, assemble detection probability p, and draw the binomial random variables C (i.e. the observed counts of great tits) <br>
+
+### Initial steps: Sample size and Covariate Values 
+Set up sample size, number of sites, and replicate counts at each site
+```{r}
+M <- 267 # Number of spatial replicates (sites)
+J <- 3 # Number of temporal replicates (counts)
+```
+Next we need to create values for the covariates. For this model, we have elevation and forestcover as site covariates: they will differ by *site* only, not by survey. <br>
+Additonally we have windspeed, which is a sampling or observational covariate; it varies potentially by both site and replicate. <br>
+
+For the purposes of simplicity, we will simply fill arrays with zero-mean random numbers for these covariates, so that all three covariates are centered on zero and do not extend too far on either side of zero. For real analyses we'd typically center or scale the covariates to avoid numerical problems with finidng the MLEs and getting convergence of the Markov chains. We here will ignore one biological reality, that the covariates are typically not independent of one another (e.g. forest cover is likely related to elevation).
+
+Initialize random seed for generating data 
+```{r}
+set.seed(24) # for following along the book, note that we should avoid setting the seed when exploring simulations so we dont get 'stuck' on a particular simulations outcome 
+
+# Generate values for the covariates that are all scaled to a range of -1 to 1 (use uniform distribution)
+elev <- runif(n=M, -1, 1) # scaled elevation of a site
+forest <- runif(n=M, -1,1) # scaled forest cover at each site
+wind <- array(runif(n=M*J, -1,1), dim = c(M,J)) # scaled wind speed 
+```
+
+### Simulating the ecological process and its outcome: great tit abundance 
+To simulate the abundance of the great tit at each site, we choose values for the parameters that govern the spatial variation in abundance from $\beta_0$ to $\beta_3$. <br>
+The first parameter is the average expected abundance on the log scale of great tits when all covariates have a value of zero - i.e. the intercept of the abundance model. <br> 
+Thinking of abundance first is a bit more intutive, so we'll think of it that way first and then link-transform that number. 
+```{r}
+mean.lambda <- 2 # Mean expected abundance of great tits
+beta0 <- log(mean.lambda) # Same on logscale (=log-scale intercept)
+beta1 <- -2 # Effect (slope) of elevation
+beta2 <- 2 # Effect (slope) of forest-cover
+beta3 <- 1 # Interaction effect (slope) of elev and forest
+```
+And apply the linear model and obtain the logarithm of the expected abundane of great tits, then use exponentiation to get the expected abundance of great tits, and plot everything.
+```{r}
+log.lambda <- beta0 + beta1*elev + beta2*forest + beta3*elev*forest
+lambda <- exp(log.lambda) # inverse link transformation
+
+par(mfrow=c(2,2), mar = c(5,4,2,2), cex.main = 1)
+curve(exp(beta0+beta1*x), -1,1, col = "red", frame.plot=FALSE, ylim=c(0,18), xlab = "Elevation", ylab = "")
+text(-0.9, 17, "A", cex = 1.5)
+plot(elev, lambda, frame.plot = FALSE, ylim = c(0, 38), xlab = "Elevation", ylab = "")
+text(-0.9, 36, "B", cex = 1.5)
+curve(exp(beta0 + beta2*x), -1,1, col = "red", frame.plot=FALSE, ylim = c(0,18), xlab = "Forest cover", ylab = "lambda", lwd = 2)
+text(-0.9, 17, "C", cex = 1.5)
+plot(forest, lambda, frame.plot=FALSE, ylim=c(0,38), xlab = "Forest Cover", ylab = "")
+text(-0.9,36, "D", cex=1.5)
+```
+A. Relationship of lambda-elevation for a constant value of forest cover (at th average of zero) <br> 
+B. Relationship of lambda-elevation at the observed value of forest cover. <br>
+C. Relationship of lambda-forest cover for a constant value of elevation (at the average of zero) <br>
+D. Relationship of lambda-forest cover at the observed value of elevation <br> 
+
+Additionally we can better visualize the joint relationships between expected abundance, elevation, and forest cover by computing the expected abundance of great tits for a grid spanned by a range of observation values for both covariates and visualize the 3D relationships. 
+```{r}
+# Compute expected abundance for a grid of elevation and forest cover
+cov1 <- seq(-1,1,, 100) # Values for elevation
+cov2 <- seq(-1,1,,100) # Values for forest cover 
+
+lambda.matrix <- array(NA, dim = c(100,100)) # Prediction Matrix, for every combo of values of elevation and forest cover
+
+for(i in 1:100){
+  for(j in 1:100){
+    lambda.matrix[i,j] <- exp(beta0 + beta1*cov1[i] + beta2*cov2[j] + beta3 * cov1[i]*cov2[j])
+  }
+}
+
+par(mfrow = c(1,2), mar = c(5,4,3,2), cex.main = 1.6)
+mapPalette <- colorRampPalette(c("grey", "yellow", "orange", "red"))
+image(x = cov1, y = cov2, z = lambda.matrix, col = mapPalette(100), xlab = "Elevation", ylab = "Forest Cover", cex.lab = 1.2)
+contour(x = cov1, y = cov2, z = lambda.matrix, add = TRUE, lwd = 1)
+matpoints(elev, forest, pch = "+", cex = 0.8) # add observed cov values 
+
+```
+The expected abundance of great tits $\lambda$ and elevation adnd forest cover simultaneously. As we have high forest cover and low elevation we expect higher abundance of the bird. <br>
+
+So far there is no Stochasticity built into the relationships between great tit abundance and the covariates. We need to adopt some sort of statistics model or distribution to describe the random variability around the expected value $\lambda$. <br>
+
+As a typical choice, we draw the actual number of tits at each site i, N_i, from a Poisson distribution with the given expectation (lambda_i). 
+
+```{r}
+N <- rpois(n = M, lambda = lambda) # Realized Abundance 
+sum(N) # total population size at M sites
+table(N) # Frequency distribution of tit abundance 
+```
+Now we have createed the result of the ecological process: site specific abundance, N_i. 61 sites are unoccupied, and the remaining 201 sites have a total of 1507 great tits, with 1:38 individuals each. 
+
+### Simulating the observation process and its outcome: point counts of great tits 
+Now we need to incorporate the observation process, as the actual abundance is something we cant really measure. <br> 
+The observation process includes two sources of error: <br> 
+1. Observation error (i.e. we fail to see the individuals that are there) <br> 
+2. Measurement error (i.e. is affected by the covariates, such as elevation and wind speed) <br>
+
+Note that though we did build the interaction effect between two covariates into our data $\alpha_3*elev_i*wind_{ij}$, we set these to zero to retain simplicity. <br> 
+
+First, we choose values for alpha0 through alpha3, where the first is the expected detection probability of an individual great tit, on the logit scale, when all detection covariates have a value of zero. 
+```{r}
+mean.detection <- 0.3 # Mean expected detection probability
+alpha0 <- qlogis(mean.detection) # Same on logit scale (intercept)
+alpha1 <- 1 # Effect (slope) of elevation
+alpha2 <- -3 # Effect (slope) of wind speed
+alpha3 <- 0 # Interaction effect (slope) of elev and wind
+```
+
+Using a linear model, we can get the logit of the probabiliy of detecting a great tit for each site and survey. Applying the inverse logit transformation, we can get a matrix of dinesions 267 by 3 with detection probability for each site i and survey j. 
+```{r}
+logit.p <- alpha0 + alpha1*elev + alpha2*wind + alpha3*elev*wind 
+p <- plogis(logit.p) # inverse link transform
+mean(p) # average per-individual p is 0.38 
+
+par(mfrow = c(2,2), mar = c(5,4,2,2), cex.main = 1)
+curve(plogis(alpha0 + alpha1*x), -1, 1, col = "red", frame.plot = FALSE, ylim = c(0,1.1), xlab = "Elevation", ylab = "p", lwd = 2)
+text(-0.9, 1.05, "A", cex = 1.5)
+matplot(elev, p, pch = "*", frame.plot=FALSE, ylim = c(0,1.1), xlab = "Elevation", ylab = "")
+text(-0.9, 1.05, "B", cex = 1.5)
+matplot(elev, p, pch = "*", frame.plot = FALSE, ylim = c(0, 1.1), xlab = "Elevation", ylab = "")
+```
+
