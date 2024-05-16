@@ -1,0 +1,98 @@
+---
+title: "Intro-to-fxns"
+author: "jt-miller"
+date: "2023-12-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## The Art of R Programming: 1.3 Introduction to Functions
+A function is a group of instructions that takes inputs and uses them to compute other values. 
+
+E.g. Create a function that counts the odd numbers in a vector of integers
+```{r}
+x <- c(1,2,4) # create a vector of numbers
+
+# Count the number of odd intergers in x 
+
+oddcount <- function(x) { # first tell r we want to define the function 'oddcount' with one argument x, the { } denote the beginning and end of the fxn. 
+  k <- 0 # initialize our count at zero
+  for(n in x){  # set n to x[1], x[2], ... x[n]
+    # where %% is the modulo operator (basically gives you the remainder of a division operation e.g. 31%%5 = 1) 
+    if(n %% 2 == 1) # if the remainder is == 1 after being divided by 2
+      k <- k + 1 #  then it must be odd therefore add one to k 
+  }
+  return(k)
+}
+
+oddcount(x) # one odd number in the vector x 
+oddcount(c(1,4,5,1,5)) # 4 odd numbers in this example vector...
+
+```
+One thing of particular note is that R programming tends to avoid loops if possible, and when used to keep them as simple as possible 
+```{r}
+oddcount <- function(x) { # first tell r we want to define the function 'oddcount' with one argument x, the { } denote the beginning and end of the fxn. 
+  k <- 0 # initialize our count at zero
+  for(i in 1:length(x)){  # the good-old c++ way. 
+    # where %% is the modulo operator (basically gives you the remainder of a division operation e.g. 31%%5 = 1) 
+    if(x[i] %% 2 == 1) # if the remainder is == 1 after being divided by 2
+      k <- k + 1 #  then it must be odd therefore add one to k 
+  }
+  return(k) # return the value k 
+}
+
+oddcount(x) # one odd number in the vector x 
+oddcount(c(1,4,5,1,5)) # 4 odd numbers in this example vector...
+
+```
+This does create the same output, unless x has a length = 0, but is generally discouraged since its simpler and cleaner 
+
+More terminology: 
+```{r}
+oddcount <- function(x) { # first tell r we want to define the function 'oddcount' with one argument x, the { } denote the beginning and end of the fxn. 
+  k <- 0 # initialize our count at zero
+  for(n in x){  # set n to x[1], x[2], ... x[n]
+    # where %% is the modulo operator (basically gives you the remainder of a division operation e.g. 31%%5 = 1) 
+    if(n %% 2 == 1) # if the remainder is == 1 after being divided by 2
+      k <- k + 1 #  then it must be odd therefore add one to k 
+  }
+  return(k)
+}
+
+# of note, x is known as the formal argument (or formal parameter) of the function oddcount().
+# in the following function call
+oddcount(c(1,3,5)) # c(1,3,5) is known as the actual argument. These terms are used to differentiate the fact that x is really just a placeholder, while what actually goes into the function (c(1,3,5) in this case) is what is actually used in the computation.  
+
+```
+
+### Variable Scope
+
+A variable that is only visable within the function body is local to that function. in oddcount(), k & n are the local variables. The key thing to know about local variables is that they disappear after the function returns, hence you cannot call 'n' 
+```{r}
+oddcount(c(1,2,4))
+n # wont run
+```
+Variables created outside of functions are global variables, and are available everywhere. 
+```{r}
+f <- function(x) return(x+y) # note that we just are saying return whatever we input into the formal argument, x, + y
+y <- 3 # here we assign y as a global variable 
+f(5) # here we put the input of the x argument 
+# we could also write a global variable within a function by using the superassignment operator '<<-' 
+f <- function(x){
+  y <<- 3 # globally assign y as 3 
+return(x+y)
+}
+f(5) # when we call this function, note that y is populated into our global environment as 3 
+```
+### Default Arguments
+```{r}
+g <- function(x, y=2, z=T){...} # here we build a dummy fxn that has y and z inialized if the user does note provide input, 
+g(12,z=FALSE) # x is a required actual argument, while y can be safely ignored and left to its default value of 2. Finally we can Overwrite the z's default status of T (boolean TRUE) with FALSE if we wish
+
+# Side note: T and F can be used for TRUE and FALSE, but honestly I dont really care for this as it limits our variable naming style while introducing room for confusion. 
+```
+
+

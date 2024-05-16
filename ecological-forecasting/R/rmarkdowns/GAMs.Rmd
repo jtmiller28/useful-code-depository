@@ -1,0 +1,156 @@
+---
+title: "GAMs"
+author: "jt-miller"
+date: "2024-01-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## General Additive Models (GAMs)
+Tutorial: https://www.youtube.com/watch?v=Ukfvd8akfco&t=23s
+
+### Linear Models 
+$$
+y_i = N(u_i, \sigma^2) \\
+u_i = \beta_0 + \beta_1x_{1i} + ...+ \beta_jx_{ji}
+$$
+beta 0 is the intercept, and X1, X2 are the linear effects and so on. 
+Assumptions <br>
+  1. Linear effects of covariates are a good approximation of the true effects <br>
+  2. Conditional on the values of covariates, $$y_i|X ~ N(0, \sigma^2)$$ <br>
+  3. This implies all observations have the same variance 
+  4. y_i| X are independent 
+
+An additive model relaxes the first assumption of linear effects. 
+
+We *could* use polynomials, this gets better fits by adding covariates (year, day, etc), this often causes overfitting at the edges however...
+
+GAMs offer a solution. 
+Be warned however, GAMs sit somewhere between our traditional linear models that are easily interpretable but lack flexibility and ML/deep learning which are extremely flexible but aren't easily interpretable
+
+In LM we model the mean of data as a sum of linear terms (Sum of the linear effects (fixed effects))
+$$
+y_i = \beta_0 + \sum_j \beta_jx_{ji} + \epsilon_i
+$$
+A GAM is a sum of smooth functions or smooths (replace the fixed effects with smooth fxns)
+$$
+y_i = \beta_0 + \sum_j s_j(x_{ji}) + \epsilon_i \\ 
+where, \\
+\epsilon_i \sim N(0, \sigma^2) \\
+y_i \sim Normal
+$$
+Note that y_i ~ Normal is our assumption for now. 
+
+Fitting a GAM in R
+```{r eval=FALSE}
+model <- gam(y ~ s(x2) + te(x3, x4), # formula describing the model
+             data = my_data_frame, # the data
+             method = "REML", # or option 'ML'
+             family = gaussian) # or option something more exotic 
+```
+s() terms are smooths of one or more variables
+te() (tensor product) terms are the smooth equivalents of main effects + interactions 
+
+### How does gam() know?
+*wiggly things*. enough said. But really these are called _splines_, they can represent complex fxns that can model local behavior. <br>
+
+To understand this, think of Basis Expansions: In polynomial models we use a polynomial basis expansion of x. <br> 
+x^0 = 1 - the model constant term <br> 
+x^1 = x - linear term <br>  
+x^2 <br>
+x^3 <br> 
+... <br> 
+We apply some function to our covariate to produce a new set of variables. Here were just doing powers of our covariates. For our purposes with splines were going to go a bit more complex than just changing the power of our covariates. 
+
+### Splines
+splines are *functions* composed of simpler functions <br> 
+Simpler functions are *basis functions* and the set of basis functions is a *basis* <br> 
+When we model using splines, each basis function b_k has a coefficient Beta_k. So now we're just estimating Beta_k for the parameters to make splines. <br> 
+The resulting spline is a sum of these weighted basis functions, evaluated at the values of x. 
+$$
+s(x) = \sum_{k=1}^K \beta_kb_k(x)
+$$
+So, our resulting spline s(x) is going to be the sum of: our basis function b_k(x) evaluated at the values of our covariates and weighted by the estimated coefficient. <br>
+
+Said another way: by changing the weights on the basis functions (which also just means scaling the basis functions), and then add up the value of all of those basis functions at each value of x -> build a spline. 
+
+### How wiggly should we go (i.e. how do we avoid overfitting?)
+We can measure the complexity of our model to assess this using the integrated squared second derivative of the function (W is wiggliness)...So really this just means we're penalizing the wiggliness.
+$$
+\int_R [f'']^2dx = \beta^TS\beta = W
+$$
+This computes a penalty, which we can then stick into our log-likelihood. 
+$$
+L_p = L(\beta) - (1/2) \lambda \beta^T S \beta \\
+where, L(\beta) is\ the\ log-likelihood\ of\ the\ data\ given\ the\ parameters \\
+minus\ the\ penalty\ (1/2) \lambda \beta^T S \beta 
+$$
+So when the penalty gets very large we will go to zero, avoiding overfitting. 
+
+### How to make wiggliness matter
+W measures wiggliness <br> 
+log-likelihood measures closeness to the data <br> 
+We us a smoothing parameter lambda to define the trade-off, to find the spline coefficient B_k that maximizes the penalized log-likelihood. 
+$$
+L_p = log(likelihood) - \lambda W
+$$
+So lamda allows us to control fitting. A very small lambda will be fitted exactly to our data, while a large lambda will underfit the data. Note that the gam() will select the lambda for you optimally. 
+
+### How large of a basis to use (Maximum allowed Wiggliness)
+this is something we actually have to choose. We set _basis complexity_ k (the number of basis functions within). This is the *maximum wigglyness* and can be thought of as the number of small fxns that make up a curve. Once smoothing is applied, curves have fewer effective degrees of freedom (EDF)
+$$EDF < k $$
+Default in mgcv is set to 10 by default, but this is arbitrary. k must be large enough to fit the true function and allow correct fitting, the lambda penalty will pick up the slack and do the rest. <br>
+
+But...what is *Large enough*, how do we know the true function? (spoiler we dont) <br>
+One option would be to just set k to be very very large and let the lambda fix our problems, however; this comes at an increased computation cost (waste of cpu cycles). <br>
+
+So..._make sure to check k_ you can use gam.check().<br> 
+
+## Shifting Gears to an example: Reanalyzing Arthropod data from Seibold et al 2019 using Daskalova, Phillimore, & Meyers-Smith 2021. 
+```{r}
+pkgs <- c("here", "readr", "janitor", "mgcv", "gratia", "dplyr", "ggplot2", "ggrepel") # packages req
+
+vapply(pkgs, library, logical(1L), character.only = TRUE, logical.return = TRUE) # packages check
+```
+Read in the data from Seibold et al. 2019 
+```{r}
+seibold <- read_csv2("/home/jt-miller/Soltis-lab/useful-code-depository/ecological-forecasting/R/data/25786_3_data.csv", col_types = "cccccdndddddcddnddcddcddcddnnnnnnnnnnnn") # german file things...
+```
+Some basic data wrangling for plotting purposes
+```{r}
+seibold <- seibold %>% 
+  janitor::clean_names() %>% 
+  rename(year = collection_year, 
+         region = exploratory, 
+         habitat = habitat_type) %>% 
+  mutate(across(c(habitat, sampling_regime, region, plot_id_year, plot_id), 
+                as.factor))
+```
+
+Basic plotting 
+```{r}
+seibold %>% 
+  ggplot(aes(x=year, y = abundance_identified, group = plot_id)) + 
+  geom_line() +
+  facet_grid(region ~ habitat)
+```
+So you'll notice that in the top right plot that we start with a huge abundance of arthropods. This was a critique of this paper, since a linear model will always say there is a decrease, therefore its posed that we should possibly account for our data having a very large starting value (and not model it with a basic linear model).  
+
+More Wrangling 
+```{r}
+seibold <- seibold %>% 
+  mutate(year_f = factor(year), # year as a factor for ranef
+         year_c = year - 2012) # center year
+
+
+```
+
+
+```{r}
+
+```
+
+

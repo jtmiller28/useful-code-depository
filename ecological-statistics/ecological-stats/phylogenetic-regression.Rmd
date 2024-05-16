@@ -1,0 +1,45 @@
+---
+title: "phylogenetic-regression"
+author: "jt-miller"
+date: "2023-12-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(MASS)
+```
+
+## Plotting a bivariate Normal Distribution
+```{r}
+e1.vals <- seq(-3.5,3.5, by = 0.1)
+e2.vals <- seq(-3.5,3.5, by = 0.1)
+
+y.vals <- outer(X=e1.vals, Y=e2.vals, FUN = function(x,y){out <- dnorm(x)*dnorm(y);return(out)})
+
+image(x=e1.vals,y=e2.vals,z=y.vals)
+contour(x=e1.vals,y=e2.vals,z=y.vals, add=T)
+persp(x=e1.vals,y=e2.vals,z=y.vals, phi = 25, theta = 30)
+```
+Accounting for Phylogenetic Dependencies 
+```{r}
+library(ape);library(nlme);library(phytools)
+cat("((((Homo:0.21,Pongo:0.21):0.28,",
+"Macaca:0.49):0.13,Ateles:0.62):0.38,Galago:1.00);",
+file = "ex.tre", sep = "\n")
+tree.primates <- read.tree("ex.tre")
+nspp <- length(tree.primates$tip.label)
+X <- c(4.09434, 3.61092, 2.37024, 2.02815, -1.46968)
+Y <- c(4.74493, 3.33220, 3.36730, 2.89037, 2.30259)
+corrmatrix <- corBrownian(1, tree.primates)
+silly.model <- gls(Y~1, correlation=corrmatrix)
+actual.cormat <- corMatrix(silly.model$modelStruct$corStruct, corr=TRUE)
+tree.primates$edge
+plot(tree.primates);nodelabels()
+tree.primates$edge.length
+actual.cormat
+```
+

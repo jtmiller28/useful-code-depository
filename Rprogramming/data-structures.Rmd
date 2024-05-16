@@ -1,0 +1,114 @@
+---
+title: "data-structures"
+author: "jt-miller"
+date: "2023-12-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## The Art of R Programming
+### Important R data structures. 
+
+#### Vectors, the R workhorse
+vectors are at the heart of R. The elements of a vector must all have the same mode (data type). You may have a vector containing three character strings, a vector containing three intergers, but not a mix of the two
+```{r}
+v1 <- c("one", "two", "three")
+class(v1)
+v2 <- c(1,2,3)
+class(v2)
+v3 <- c(1, 2, "three") # note that it the most inclusive class will supercede the data structure of the vector (hence its character, not numeric & character)
+class(v3)
+```
+#### Scalars
+meaning individual numbers, dont really exist in R. They simply are a truncated vector. 
+```{r}
+x <- 8
+x # note that its indexed as 1
+x[1]
+x[2] # this will still run, but the next element in this 'vector' is NA 
+```
+#### Character Strings 
+These are actually single element vectors of the mode 'character'. 
+```{r}
+x <- c(5,12,13)
+length(x)
+mode(x)
+
+y <- "abc"
+length(y)
+mode(y)
+
+z <- c("abc","29 88") # see above for explanation on this 
+length(z)
+mode(z)
+```
+You can manipulate strings in R as well, such as putting them together and pulling them apart. 
+```{r}
+u <- paste("abc", "de", "f") # concatenate the strings
+u
+
+n <- paste0("abc", "de", "f") # concatenate the strings with no spaces
+n
+
+v <- strsplit(u, " ") # split the strings according to the blanks
+v
+
+```
+#### Matices 
+An R matrix correponds to the mathematical concept of the same name: a rectangular array of numbers. Technically, a matrix is a vector, but with two additional attributes: the num of rows and the num of columns. 
+```{r}
+m <- rbind(c(1,4), c(2,2)) # use row bind to build a matrix from two vectors that will serve as its rows, store the result as m 
+m # matrix
+
+m %*% c(1,1) # where %*% is the matrix multiplier operator
+m[1,2] # indexed using double subscripting, so this will grab the value occupying the first row and second col of the matrix
+
+# You can also extract submatrices from a matrix 
+m[1,]
+```
+#### Lists 
+R lists are also containers of values, but the contents can be items of different data types. List elements are accessed using two-part names, which are indicated with the dollar sign '$' operator in R. 
+```{r}
+x <- list(u = 2, v = "abc")
+x
+
+x$u # grab the u component of list x 
+x$v
+
+# and note that they can have different modes (data types)
+mode(x$u)
+mode(x$v)
+```
+A common use-case for lists is to combine multiple values into a single package, that can then be returned by a function. 
+```{r}
+# e.g. 
+hn <- hist(Nile)
+print(hn) # now we can pull out the components that go into making the object (which is a list in this case) hist(Nile)
+str(hn) # a more compact way of viewing the overall structure of any object in R
+```
+#### Dataframes
+A typical dataset contains data of different modes, with character strings, integers, etc. 
+A dataframe in R is a list, with each component of the list being a vector corresponding to a column in our matrix of data. 
+```{r}
+d <- data.frame(list(kids = c("Jack", "Jill"), ages = c(10,12))) # is one way to create a dataframe from a list
+d
+
+d$kids # and call a particular list from the dataframe
+d$ages
+```
+##### Classes 
+R being an object oriented language contains Objects. Objects are instances of classes. Most common and foundational in R are the S3 class objects, which are also kown as lists. 
+The existence of an attribute can specify the class of a list. 
+```{r}
+print(hn) # looking again at that histogram we talked about earlier 
+# Note that the attr(, "class") yields "histogram" which is the specified class of this list (obj)
+```
+This is powerful in the case of usage with *generic functions*, generic functions stand for a family of functions, all which serve a similar purpose but each appropriate for a specific class. <br> 
+
+A commonly used generic function is summary(). summary() is actually a family of summary-making functions, each handling objects of a particular class. When you call summary(), R is actually searching for a summary function that is appropriate to the class given and uses it to create a friendlier representation of the list. This is why we can use summary() on something like the histogram obj as well as the obj created through lm()s. plot() is another instance of a generic function. 
+```{r}
+examsquiz <- read.table("ExamsQuiz.txt",header=FALSE)
+```
+

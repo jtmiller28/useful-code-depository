@@ -1,0 +1,33 @@
+---
+title: "dynamicGAMs"
+author: "jt-miller"
+date: "2024-01-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Ecological Forecasting with Dynamic GAMs 
+https://www.youtube.com/watch?v=0zZopLlomsQ
+
+Properties of ecological time series:
+- Temporal autocorrelation
+- Lagged effects
+- Non-Guassian data and missing observations
+- Measurement Error
+- Time-varying effects
+- Nonlinearities 
+- Multi-series clustering
+
+These features make it challenging to fit useful models. 
+This markdown will focus on the idea of non-linearities. 
+- Nothing in ecology is really linear, but sometimes a linear model is sufficient. But what do we do when they are not sufficient? 
+
+GAMs
+smoothing splines: prior set that makes the curve flexible, controlled by basis functions that act in a local neighborhood. spline is fitted by all of these basis functions weights combined. 
+Purpose of splines: bend and wiggle to smooth through the data. When we dont have a preconcieved idea of what the data should be. smoothing without overfitting is very important, so the splines are penalized so they arent so wiggly. 
+
+GAMs are just fancy GLMs where we replace on or more of our coefficients (the predictors) with a set of smoothing functions. 
+GAMs can then handle many different ways data 
