@@ -99,7 +99,7 @@ d$kids # and call a particular list from the dataframe
 d$ages
 ```
 ##### Classes 
-R being an object oriented language contains Objects. Objects are instances of classes. Most common and foundational in R are the S3 class objects, which are also kown as lists. 
+R being an object oriented language contains Objects. Objects are instances of classes. Most common and foundational in R are the S3 class objects, which are also known as lists. 
 The existence of an attribute can specify the class of a list. 
 ```{r}
 print(hn) # looking again at that histogram we talked about earlier 
@@ -108,7 +108,6 @@ print(hn) # looking again at that histogram we talked about earlier
 This is powerful in the case of usage with *generic functions*, generic functions stand for a family of functions, all which serve a similar purpose but each appropriate for a specific class. <br> 
 
 A commonly used generic function is summary(). summary() is actually a family of summary-making functions, each handling objects of a particular class. When you call summary(), R is actually searching for a summary function that is appropriate to the class given and uses it to create a friendlier representation of the list. This is why we can use summary() on something like the histogram obj as well as the obj created through lm()s. plot() is another instance of a generic function. 
-```{r}
-examsquiz <- read.table("ExamsQuiz.txt",header=FALSE)
-```
 
+### Help functions
+typing ?fxn or ?package is a helpful way to find out more information. Also you can explore R's available information for particular questions using help.search()

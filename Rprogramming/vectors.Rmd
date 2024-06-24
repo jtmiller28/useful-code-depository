@@ -51,6 +51,314 @@ m + 10:13 # note that R remebers that we're using matrix in variable m, therefor
 Unlike compiler languages, we do not need to declare variables (warn the interpreter/compiler) of a variabes existence prior to assigning it. Scripting languages typically do not require this meaning that the following is valid 
 ```{r}
 z <- 3
+# aka we do not need to precede this variable assignment with 
+# int z; 
+# no declaring variable typings, that happens automatically 
 ```
-When referencing specific
+When referecing specific elements of a vector though we must declare the variable first prior to the reference 
+```{r}
+# e.g. the following code would not work:
+# y[1] <- 5
+# y[2] <- 3
+
+# until y is created, then this is valid 
+y <- vector(length = 2)
+y[1] <- 5 
+y[2] <- 3
+```
+
+### Recycling 
+If you try to preform an operation where one vector is of shorter length than another, you can cause recycling. This takes the shorter vector and recycles it to match the length of the longer one. 
+```{r}
+c(1,2,4) + c(6,0,9,20,22) # and it will prompt us with a warning there is a shorter length
+```
+So what actually occurred here was: c(1,2,4,1,2) + c(6,0,9,20,22)!
+
+This becomes rather difficult to discern when dealing with matrices 
+```{r}
+x <- matrix(1:6, nrow = 3, ncol = 2)
+x
+
+x + c(1,2) 
+```
+Effectively we were doing the following: x + c(1,2,1,2,1,2)
+
+Additionally we should relize that c(1,2,1,2,1,2) was transformed into a matrix before being added to x,
+$$
+\begin{pmatrix}
+1 & 4 \\ 
+2 & 5 \\
+3 & 6 
+\end{pmatrix} +
+
+\begin{pmatrix}
+1 & 2 \\
+2 & 1 \\
+1 & 2 \\
+\end{pmatrix}
+
+$$
+### Common Vector Operations 
+
+#### Vector Arithmetic and Logical Operations
+Recall that R is a functional langauge, that is every operator (even +) is actually a function 
+```{r}
+2 + 3
+
+"+"(2,3) # A really unique way of calling the function addition, but it demonstrates that + is indeed operating as a function in r on the vector of 2,3
+```
+Recall also that scalars are actually one element vectors, So we may add vectors and the '+' operation will be applied element-wise
+```{r}
+x <- c(1,2,4)
+x + c(5,0,-1)
+```
+When we multiply the two vectors, we continue with element by element multiplication. 
+```{r}
+x * c(5,0,-1) # 
+```
+This is true of the other operations as well, consider the modulo operation (integer-divide x by y and return the remainder)
+```{r}
+x <- c(1,2,4)
+x/c(5,4,-1) # a regular division
+
+x %% c(5,4,-1)
+```
+#### Vector Indexing 
+Indexing vectors is a common use case in R. Here, we form a subcevtor by picking elements of the given vector for specific indices. 
+```{r}
+y <- c(1.2, 3.9, 0.4, 0.12)
+y[c(1,3)] # extract elements 1 and 3 of y (index)
+y[2:3] # extract elements 2 through 3 of y (index)
+
+v <- 3:4 
+y[v] # extract elements v (2 through 4) of y (index)
+```
+Also of note, we can index to pull out duplicates
+```{r}
+x <- c(4,2,17,5)
+y <- x[c(1,1,3)]
+y
+```
+Negative subscripts mean that we want to exlude the given elements from our output 
+```{r}
+z <- c(5,12,13)
+z[-1] # exclude element 1
+
+z[-1:-2] # exclude elements 1 through 2 
+```
+If interested in exclusions while indexing, the length() fxn often is powerful tool. 
+```{r}
+# e.g. We wish to extract all elements of vector z except for the last.
+z <- c(5,12,13)
+z[1:(length(z)-1)]
+
+# More succinct 
+z[-length(z)] # take out the last value as lenght will return the vector length
+```
+
+#### Generating iseful vectors with the ':' Operator
+Recall that the ':' operator produces a vector consisting of a range of numbers. 
+```{r}
+5:8
+```
+These may be used in a loop context as well
+```{r}
+x <- c(1,2)
+for(i in 1:length(x)){
+  print("aRg")
+}
+```
+Be aware of operator precedence issues, the colon takes presedence over subtraction. 
+```{r}
+i <- 2 
+1:i-1 # this actually means (1:i) - 1, not 1:(i-1)
+
+i:(i-1) # the correct way to do this. 
+```
+#### Generating Vector Sequences with seq()
+A generalization of : is the seq() fxn, which will generate a sequence in arithmetic progression.
+E.g. 3:8 yields the vector c(3,4,5,6,7,8) spaced evenly one unit apart. We can customize this a bit with the seq() fxn. 
+```{r}
+seq(from = 12, to = 30, by = 3) # evenly spaced by units of 3 
+```
+The spacing can be noninteger values, 0.1 for example
+```{r}
+seq(from = 1.1, to = 2, by = .1)
+# or 
+seq(from = 1.1, to = 2, length = 10)
+```
+One excellent use case of seq() is dealing with empty-vector problems. 
+```{r}
+x <- c()
+for(i in 1:length(x)){ # Even though our vector is empty, the 1:length(x) will still return 1,0 causing our loop to proceed to do something
+  print("I really shouldnt do anything")
+}
+
+# Instead we could write the loop as such.
+for(i in seq(x)){
+  print("I absolutely shouldnt do anything") # and yes, this loop wont do anything. 
+}
+
+# why is this happening? 
+x <- NULL
+seq(x) # returns nothing
+```
+#### Repeating Vector Constants with rep() 
+The rep() repeat function allows for putting the same constant into long vectors. The call for this is rep(x, times), creating a vecotr of times*length(x) elements, where times copies x. 
+```{r}
+x <- rep(8,4) # repeat 8 four times
+x
+
+rep(c(5,12,13),3) # repeat the vector c(5,12,13) three times
+
+rep(1:3, 2) # repeat the vector 1:3 twice
+```
+You can also use the argument 'each' which interleaves the copies of x 
+```{r}
+rep(c(5,12,13), each = 4)
+```
+#### Using any() and all() 
+any() and all() are convienient shortcut functions to report whether any or all the arguments are TRUE
+```{r}
+x <- 1:10
+any(x > 9)
+any(x > 10)
+
+all(x > 9)
+all(x > 0)
+```
+#### Extended Example: Finding Runs of Consecutive Ones 
+Suppose that we are interested in finding runs of consecutive 1s in vectors that consist of just 1s and 0s. In the vector (1,0,0,1,1,1,0,1,1) for instance, there is a run of length 3 starting at index 4, and runs of length 2 beginning at index 4,5, and 8.
+So we can try to create a function that encapsulates this
+```{r}
+findruns <- function(x,k){ # k will be the length of runs required
+  n <- length(x) 
+  runs <- NULL
+  for(i in 1:(n-k+1)){
+    if (all(x[i:(i+k-1)]==1)) runs <- c(runs,i) # x[i], x[i+1],...,x[i+k-1] determine if all values are 1s 
+  }
+  return(runs)
+}
+
+y <- c(1,0,0,1,1,1,0,1,1)
+findruns(y,3) # pulls out the index of where runs of 3 exist
+findruns(y,2)
+findruns(y,6)
+```
+The build-up of runs in the preceding code is not great. Vector allocation is time consuming. Each execution of it will slow down the code, as vector memoery space allocation must take place. 
+
+In a short loop this doesnt pose much of an issue, but expanded we could run into serious performance issues. One alternative is to preallocate the memory space: 
+```{r}
+findruns1 <- function(x,k){
+  n <- length(x)
+  runs <- vector(length = n) # set up space of a vector of length n, avoiding new allocations during the execution of the loop. 
+  count <- 0 
+  for(i in 1:(n-k+1)){
+    if (all(x[i:(i+k-1)]==1)){
+      count <- count + 1
+      runs[count] <- i
+    }
+  }
+  if (count > 0){
+    runs <- runs[1:count] # redefine runs to remove the unused portion of the vector. 
+  } else runs <- NULL
+  return(runs)
+}
+y <- c(1,0,0,1,1,1,0,1,1)
+findruns(y,3) 
+findruns(y,2)
+findruns(y,6)
+
+```
+This is better, we've reduced the number of memory allocations to just two, down from possibly many in the first version of the code. If speed is a big issue, consider coding in C and calling. 
+
+#### Extended Example: Predicting Discrete-Valued Time Series
+Suppose we observe binary 0, 1 data, one per time period. 
+0 = no rain
+1 = rain 
+
+Suppose we wish to predict whether it will rain tomorrow, knowing whether it rained or not in recent days. 
+
+Specifically, for some number k, we will predict tomorrow's weather based on the weather record of the last k days. We'll use majority rule: I fth enumber of 1s in the previous k time periods is at least k/2, we'll predict the next value to be 1. Otherwise, our prediction is 0.
+
+For instance, if k = 3, and the data of the last three periods is 1,0,1, we'd predict the next period to be a 1. 
+
+How should we choose k? If we choose too small of a value, it may give us too small a sample from which to predict. Too large a value will cause us to rely on data from the distant past that may have little predictive power. 
+
+A common solution to this is to take the known data, called a training set, and ask how well various values of k would have preformed on that data. 
+
+In this weather case, suppose that we have 500 days of data and suppose we are considering using k = 3. To assess the predictive ability of that value for k, we "predict" each day in our data from the previous three days and then compare the predictions with the known values. After doing this throughout our data, we have an error rate for k = 3. We do the same for k = 1, k = 2, k = 4, ..... so on, up to the maximum value of k we are comfortable with. We will then use whichever value of k that worked best in our training data for future predictions. 
+
+Here's a first round of coding, a naive approach. 
+```{r}
+preda <- function(x,k){
+  n <- length(x)
+  k2 <- k/2
+  
+  pred <- vector(length=n-k) # the vector pred will contain our predicted values
+  for(i in 1:(n-k)){
+    if(sum(x[i:(i+(k-1))]) >= k2) 
+      pred[i] <- 1
+    else 
+      pred[i] <- 0 
+  }
+  return(mean(abs(pred-x[(k+1):n])))
+}
+```
+
+Note the if(sum...) line, here we're predicting day i + k (prediction to be stored in pred[i]) from the k days previous to it, that is, days i,...i+k-1. Thus we need to count the 1s among those days. Since we are working with 0 and 1 data, the number of 1s is simply the sum of x[j] among those days, which can be achieved with sum(x[i:(i+(k-1))]). Note that instead of writing the j-loop here, we avoid this by use of sum() and vector indexing, making the code overall simpler to read and faster. 
+
+The same is true for mean(abs(pred-x[(k+1):n])). Here, pred contains the predicted values, while x[(k+1):n] has the actual values for the days in question. Subtracting the second from the first gives us values of either 1,0, or -1. Here 1 or -1 correspond to the prediction errors in one direction or the other, predicting 0 when the true value was 1 or vice versa. taking the abs() values, we will have 0s or 1s, the latter corresponding to the errors. 
+
+Now we know which days give errors, it remains to caculate to proportion of these errors. We may do this by applying mean(), where we can exploit the mathematical fact that the mean of 0 and 1 data is the proportion of 1s (this is a common R trick).
+
+This code for fxn preda() is straightforward and has simplicity and compactness, but its probably slow. We could try speeding it up by vectorizing the loop, however this would not address the major obstacle to speed here, which is all of the duplicate computation that the code currenlty does. For successive values of i in the loop, sum() is being claled on vectors that differ by only two elements. Except for cases in which k is very small, this could be really slowing things down. 
+
+Rewriting the code to take advantage of the previous computation, in each iteration of the loop, we will update the previous sum we found, rather than computing the new sum from scratch. 
+```{r}
+predb <- function(x,k){
+  n <- length(x)
+  k2 <- k/2
+  pred <- vector(length=n-k)
+  sm <- sum(x[1:k])
+  if(sm >= k2) 
+    pred[1] <- 1 
+  else 
+    pred[1] <- 0
+  if(n-k >= 2){
+    for(i in 2:(n-k)){
+      sm <- sm + x[i+k-1] - x[i-1] # Here we are updating sm by subtracting the oldest element making up the sum of x(i-1) and adding the new one (x[i+k-1])
+      if(sm >= k2) 
+        pred[i] <- 1
+      else 
+        pred[i] <- 0
+    }
+  }
+  return(mean(abs(pred-x[(k+1):n])))
+}
+```
+
+Another approach to this problem would be using a cumalitive sum approach via cumsum() 
+```{r}
+y <- c(5,2,-3,8)
+cumsum(y)
+```
+We can now incorporate this into our prediction function 
+```{r}
+predc <- function(x,k){
+  n <- length(x)
+  k2 <- k/2
+  # the vector read will contain our predicted values
+  pred <- vector(length = n-k)
+  csx <- c(0,cumsum(x))
+  for(i in 1:(n-k)){
+    if (csx[i+k] - csx[i] >= k2)
+      pred[i] <- 1
+    else 
+      pred[i] <- 0
+  }
+  return(mean(abs(pred-x[(k+1):n])))
+}
+```
+
 
