@@ -164,3 +164,212 @@ You get multiple levels out of the same variable (e.g. different color and shape
 Allows for modifying the width of the border on shapes, only works for shapes that have a border 
 
 
+### Facets 
+Another way to visualize additional variables outside of aethetics is through using *facets*, which allow for splitting the plot into subplots typically by a categorical variable. <br> 
+
+To facet by a single variable, use facet_wrap(), where the first argument is a formula (~), the variable passed to the facet should be discrete. 
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class, nrow = 2) # nrow makes 2 rows of subplots. 
+```
+To facet your plot on combination of vars, add facet_grid(). The first argument is again a formula, where the two vars are seperated by a ~. 
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(drv ~ cyl)
+```
+Note that facet_grid(rows ~ columns), therefore if we'd prefer to not facet in either of those dimensions, we can use a '.', as this indicates to map no variable. 
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(. ~ cyl)
+```
+Exercises:
+1. What happens if you facet on a continuous var? 
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_wrap(~cty) 
+```
+Faceting on a continuous variable causes subplots to be created for every value in that variable, which is typically not desirable. 
+
+2. What do the empty cells in a plot with facet_grid(drv ~ cyl) mean? How do they relate to this plot? 
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = cyl)) + 
+  facet_grid(drv ~ cyl)
+```
+The empty plots indicate that there is no data present for those subplot conditions. 
+
+3. What plot does the following code make? What does . do? 
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(drv ~ .)
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(. ~ cyl)
+```
+The code makes facets for drv and cyl respectively, the difference here is that we're using '.' to force the structure of these subplot facets. facet_grid(rows ~ columns), replacing either the rows or columns argument with a . will force the subplots to be oriented along rows or cols. <br> 
+
+4. Take the first faceted plot in this section: 
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class, nrow = 2)
+```
+What are the advantages to using faceting instead of the color aesthetic? What are the disadvantages? How might the balance change if you had a larger dataset? <br> 
+
+To figure this out lets visualize. 
+```{r}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy, color = class))
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class)
+```
+The advantages are that the subplots are simpler to interpret per plot i.e. I can actually pick out trends among the classes. The disadvantage is that Im missing the whole picture as far as how trends relate to one another as its more difficult to visualize all of the subplots overlayed. If my dataset were larger, it would be more challenging to understand what is happening with just an aesthetics mapping, as overlapping points may present an issue. Of course, if classes start increasing this becomes challenging for multiple reasons on both plots (i.e. color gradients, # of subplots). <br> 
+
+5. Read ?facet_wrap. What does nrow do? What does ncol do? What other options control the layout of the individual panels? Why doesn't facet_grid have row and ncol vars? 
+```{r}
+?facet_wrap
+```
+nrow and ncol controls the number of cols and rows we orient our subplots with. as.table is another layout option available, where if the boolean value = TRUE then facets are laid out like a table with the highest values in the bottom right. If FALSE, facets are laid out like a plot with the highest value a the top right. Default is TRUE. facet_grid() does not have row or col calls because it uses the number of levels (uniq values) for the associated variables as those parameters.<br>
+
+6. When using facet_grid() you should usually put the variable with more unique levels in the columns. Why?
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(drv ~ cyl) 
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(cyl ~ drv)
+```
+Visually having more cols then rows is more pleasing(?)
+
+### Geometic Objects
+A *geom* is the geometric object that a plot uses to represent data. Usually we describe the plots by the type of geom: bar geoms = bar charts, line geoms = line charts, box geoms = box geoms...etc.  <br> 
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy))
+
+ggplot(data = mpg) + 
+  geom_smooth(mapping = aes(x = displ, y = hwy))
+```
+Every geom fxn takes a mapping argument, however; not every aesthetic works with every geom. E.g. you could try and set a shape of a point on geom_smooth, but it wouldnt change the output of the line. You can however set linetype for each unique class. 
+```{r}
+ggplot(data = mpg) + 
+  geom_smooth(mapping = aes(x = displ, y = hwy, linetype = drv))
+```
+Here geom_smooth() separates the cars into three lines based on the drv value, which describes the cars drivetrain. Additionally we can overlay the actual data onto these smoothed trends
+```{r}
+ggplot(data = mpg) + 
+  geom_smooth(mapping = aes(x = displ, y = hwy, linetype = drv, color = drv)) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = drv))
+```
+Adding multiple geoms is powerful, however it does introduce some duplication into our code (not great). To avoid duplication, we can pass the set of mapping arguments directly through the first ggplot() call. 
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, linetype = drv, color = drv)) + 
+  geom_smooth() + 
+  geom_point()
+```
+Or you can treat local mappings per layer. 
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point(mapping = aes(color = class)) + 
+  geom_smooth()
+```
+We can also only display a subset of data within a layer.
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) +
+  geom_point(mapping = aes(color = class)) + 
+  geom_smooth(
+    data = filter(mpg, class == "subcompact"),
+    se = FALSE # removes confidence interval
+  )
+```
+Exercises <br>
+1. What geom would you use to draw a line chart? A boxplot? A histogram? An area chart? <br> 
+```{r}
+# line chart (2 continuous vars)
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_line()
+
+# boxplot (1 discrete var, 1 continuous var)
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + 
+  geom_boxplot()
+
+# histogram (1 continuous var)
+ggplot(data = mpg, mapping = aes(x = hwy)) + 
+  geom_histogram()
+
+# area chart (1 continuous var)
+ggplot(data = mpg, mapping = aes(x = hwy)) + 
+  geom_area(stat = "bin")
+```
+2. Run this code in your head and predict what the output will look like. THen run the code in R and check your predictions
+```{r}
+ggplot(
+  data = mpg, 
+  mapping = aes(x = displ, y = hwy, color = drv)
+) + 
+  geom_point() + 
+  geom_smooth(se = FALSE)
+```
+3. What does show.legend = FALSE do? What happens if you remove it? Why do you think its used earlier in the chapter? <br> 
+Removes the legend from showing for the geom layers, it was likely used for visually appealing reasons (i.e. we lost information by removing it, but maybe it wasn't relevant information for us to care about.) <br> 
+
+4. What does the se argument to geom_smooth do? <br>
+It is an argument taking a boolean TRUE or FALSE value for whether we want to include the confidence interval. <br> 
+
+5. Will these two graphs look different? Why or Why not? 
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth()
+
+ggplot() + 
+  geom_point(
+    data = mpg, 
+    mapping = aes(x = displ, y = hwy) 
+  ) + 
+  geom_smooth(
+    data = mpg, 
+    mapping = aes(x = displ, y = hwy)
+  )
+```
+No they do the same things. Because one uses global assignment (within the fxn) for the geoms, while the other relies on individual assignment. <br> 
+
+6. Re-create the R code necessary to create the graphs in the book. 
+```{r}
+# top left
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE)
+
+# top right (slightly different, but I cant get it without putting line = drv, which is ignored)
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, mapping = aes(color= drv))
+
+# middle left
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, color = drv)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE)
+
+# middle right
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point(mapping = aes(color = drv)) + 
+  geom_smooth(se = FALSE)
+
+# bottom left
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, color = drv)) +
+  geom_point()
+```
+
+
+
