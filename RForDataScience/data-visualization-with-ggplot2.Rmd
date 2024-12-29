@@ -370,6 +370,105 @@ ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) +
 ggplot(data = mpg, mapping = aes(x = displ, y = hwy, color = drv)) +
   geom_point()
 ```
+### Statistical Transformations
+Let's visualize an dataset about diamonds using barcharts
+```{r}
+ggplot(data = diamonds) +
+  geom_bar(mapping = aes(x = cut))
+```
+Quite quickly, this chart tells us that most diamonds within this dataset are skewed towards better cuts. <br> 
+Note a subtlety here though, the variable count is not present in the dataframe. From this we know that some graphs, such as bar chars, calculate these new values for the plot based on the x-axis unique values + number of rows associated with each of these values. Barcharts, histograms, and frequency polygons *bin* your data and then plot the bin counts. A further example of this is smoothers. They fit a model to your data and then plot predictions from the model. <br> 
 
+The algorithm used to calc new values for a graph is called a *stat*, which is short for statistical transformation. In the case above, geom_bar() is transforming the data with the count stat, returning these values to be plotted. <br> 
+
+To understand what stat is being used by each geom, we can check to see what the default value for the stat argument is. For geom_bar(), its "count" = stat_count(). <br>
+
+Generally you can use geoms and stats interchangeably:
+```{r}
+ggplot(data = diamonds) + 
+  stat_count(mapping = aes(x = cut))
+```
+This works because every geom has a default stat, and every stat has a default geom. (meaning we can use geoms typically without changing the underlying stat.). <br>
+
+There are three reasons you might want to change the stat: <br> 
+1. You want to override the default stat to do something specific, such as removing count for identity (identifies the counts from some form of data supplied rather than the number of rows(observations) in the dataframe)
+```{r}
+demo <- tribble(
+  ~a,      ~b, 
+  "bar_1", 20,
+  "bar_2", 30,
+  "bar_3", 40
+)
+
+ggplot(data = demo) +
+  geom_bar(
+    mapping = aes(x = a, y = b), stat = "identity"
+  )
+```
+2. You might want to override the default mapping from transformed variables to aesthetics. E.g. you might want to present proportional values in our bar chart rather than counts. 
+```{r}
+ggplot(data = diamonds) +
+  geom_bar(
+    mapping = aes(x = cut, y = ..prop.., group = 1)
+  )
+```
+3. You might want to draw greater attention to the statistical transformation in the code. For example, you can use stat_summary() whcih summarizes the y values for each unique x value, to draw attention to the summary that you're computing. 
+```{r}
+ggplot(data = diamonds) + 
+  stat_summary(
+    mapping = aes(x = cut, y = depth),
+    fun.ymin = min, 
+    fun.ymax = max, 
+    fun.y = median
+  )
+```
+Exercises: <br>
+1. What is the default geom associated with stat_summary()? How could you rewrite the previous plot to use that geom function instead of the stat function? 
+```{r}
+?stat_summary()
+
+ggplot(data = diamonds) +
+  geom_pointrange(mapping = aes(x = cut, y = depth), 
+                  fun.min = min, 
+                  fun.max = max, 
+                  fun = median,
+                  stat = "summary")
+```
+2. What does geom_col() do? How is it different from geom_bar()? <br> 
+geom_col() requires a discrete and continuous variable, therefore it needs to look at a numeric value that is represented within that variable. geom_bar() looks at the number of rows associated with each unique value within the variable inputed. <br> 
+
+3. Most geoms and stats come in pairs that are almost always used in concert. Read through the documentation and make a list of all the pairs. What do they have in common?  <br>
+1. stat_bin() = bar <br>
+2. stat_count() = bar <br>
+3. stat_density() = area <br>
+4. stat_bin_2d() = tile <br>
+5. stat_bin_hex() = hex <br>
+6. stat_density_2d() = density_2d <br>
+7. stat_ellipse() = path <br>
+8. stat_contour() = contour <br>
+9. stat_summary_hex() = tile <br>
+10. stat_summary_2d() = tile <br>
+11. stat_boxplot() = boxplot <br>
+12. stat_ydensity() = violin <br>
+13. stat_ecdf() = step <br>
+14. stat_quantile() = quantile <br>
+15. stat_smooth() = smooth <br>
+16. stat_function() = function <br>
+17. stat_qq() = point <br>
+18. stat_sum() = point <br>
+19. stat_summary() = pointrange <br>
+20. stat_summary_bin() = pointrange <br>
+21. stat_identity() = point <br>
+22. stat_unique() = point <br>
+
+Purpose: Each pair is designed to take data and transform it using a specific statistical method, then visualize the output with an appropriate geometric representation. <br>
+
+Stats are responsible for computing some aspect of the data, such as binning, summarizing, calculating density etc. e.g. stat_bin() calculates the counts within bins, stat_density() computes kernel density estimates. <br> 
+
+Geoms are responsible for how the statistical results are presented visually. E.g. geom_bar() creates bars from binned data (stat_bin()), while geom_area() fills areas to represent densities (stat_density()) <br>
+
+Consistency in purpose: each stat/geom pair ensures a logical and intuitive data visualization. e.g. statistical summaries (stat_summary()) are best represented by pointrange geoms because they show the central tendency and spread of the data. <br>
+
+Commonality: Each stat is desinged to compute a specific data transformation or summary of the data, while its corresponding geom is made to visually represent the results of that transformation. 
 
 
