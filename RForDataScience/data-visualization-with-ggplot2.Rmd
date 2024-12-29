@@ -1,0 +1,166 @@
+---
+title: "data-visualization-with-ggplot2"
+author: "jt-miller"
+date: "2024-12-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load libraries
+```{r}
+library(tidyverse)
+```
+## Visualize the data related to a question
+Do cars with big engines use more fuel than cars with small engines? <br>
+More precisely... <br>
+What does the relationship between engine size and fuel efficiency look like? Is it positive? Negative? Linear? NonLinear? <br> 
+
+### Load in the mpg dataframe
+the mpg dataframe is integrated into the package ggplot2. A *dataframe* is a rectangular colleciton of variables (in cols) and observations (in rows). mpg contains observations collected by the US EPA on 38 models of cars. 
+```{r}
+mpg
+```
+Some key variables within mpg are: <br>
+- displ: a car's engine size, in liters <br> 
+- hwy, a car's fuel efficiency on the highway, in miles per gallon (mpg). A car with a low fuel efficiency consumes more fuel than a car with a high fuel efficiency when they travel the same distance <br> 
+
+### Creating a ggplot
+To plot mpg, we're going to look at a basic scatter plot with displ on the x-axis and hwy on the y-axis
+```{r}
+ggplot(data=mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy))
+```
+This plot shows a negative relationship between engine size (displ) and fuel efficiancy (hwy). Cars with big engines use more fuel. This supports our hypothesis that fuel efficiency decreases with engine size. <br> 
+
+Regarding the syntax of ggplot2 <br> 
+- ggplot() creates a coordinate system that you can add layers to. You can add data as the first argument to this function to denote that the coordinate system will use this dataframe for all follliwing layers. <br> 
+- You can complete the graph by then adding one or more layers to ggplot(). Here, geom_point() adds a layer of points to your plot, which then creates a scatter plot. ggplot2 comes with many geom functions that each add a different type of layer to a plot. <br> 
+- Each geom function in ggplot2 takes a mapping argument. This defines how variables in your dataset are mapped to visual properties. The mapping argument is always paired with aes(), and the x and y arguments of aes() specify which variables to map to the x and y axes. ggplot2 looks for the mpaped variable in the data argument, this case being mpg. <br> 
+
+### Generalized Graphing Template 
+ggplot(data = <Data>) +
+  <Geom_Fxn>(mapping = aes(<Mapping>))
+  
+### Exercises
+1. Run ggplot(data=mpg). What do you see?
+```{r}
+ggplot(data=mpg) # nothing, as we've simply created the coordinate system without adding any additional layers that create the visualizations for the data.
+```
+2. How many rows are in mtcars? How many cols?
+```{r}
+nrow(mtcars) # 32 rows
+ncol(mtcars) # 11 cols
+# or 
+dim(mtcars) # 32 rows, 11 cols
+```
+3. What does the drv variable describe? Read the help documentation for ?mpg to find out. 
+```{r}
+?mpg # the type of drive train, where f = front-wheel drive, r = rear wheel drive, 4 = 4wd
+```
+4. Make a scatterplot of hwy versus cyl 
+```{r}
+ggplot(data=mpg) + 
+  geom_point(mapping = aes(x = hwy, y = cyl))
+```
+High # of cylinders typically have lower highway miles per gallon. <br>
+
+5. What happens if you make a scatterplot of class versus drv? Why is the plot not useful?
+```{r}
+ggplot(data=mpg) + 
+  geom_point(mapping = aes(x = class, y = drv))
+```
+This plot can tell us about the types of drive trains each type of car has, but does not help us visualize fuel efficiancy. 
+
+
+### Aesthetic Mappings
+Say that there are particular cars that we're interested in testing whether their trends are nonlinear with engine size and highway miles per gallon. We can do this visually by adding a third variable, like class, to a two-dimensional scatterplot by mapping it with aesthetic. <br> 
+
+Aesthetics is a visual property of the objects in your plot. Aesthetics include things like the size, the shape, or the color of the points. As we already use 'value' to decribe the data, the word 'level' will be used here to describe aesthetic properties. <br> 
+
+To convey more information about our data, we can map the colors of your points to the class variable to reveal the underlying class of each car. 
+```{r}
+ggplot(data=mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = class))
+```
+Here, ggplot2 will automatically assign a unique level of the aesthetic (here a uniq color) to each uniq value of the variable, a process known as *scaling*. ggplot2 will also add a legend that explains which levels correspond to which values. <br> 
+
+The colors here reveal that many of the unusual points with higher highway fuel efficiancy for their size of engine are actually 2-seaters. These are in fact sports cars, which makes sense as they have large engines like an SUV, but small bodied increasing their overall fuel efficiancy. <br>
+
+There are multiple aesthetics we can map class to, for example we could use the *size* aesthetic 
+```{r}
+ggplot(data=mpg) + 
+  geom_point(mapping = aes(x=displ, y=hwy, size=class))
+```
+As noted by the warning, this isnt really that useful of a visualization as mapping an unordered variable (class) to an ordered (aesthetic) is not a good idea. <br> 
+
+We could also ma class to the *alpha* aesthetic, which controls the transparency of the points, or the shape of the points: 
+```{r}
+# Top Plot 
+ggplot(data=mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy, alpha = class))
+# Bottom Plot
+ggplot(data=mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, shape = class))
+```
+What happened to the SUVs? ggplot2 will only use six shapes at a time. By default, additional groups will go unplotted when you use this aesthetic. <br> 
+
+Note that most of what's happening in how the aesthetic is visualized is by ggplot2's choosing. For x and y aesthetics, axes lines with tick marks and labels are generated. For additional aesthetics, e.g. size, color, and alpha, ggplot2 constructs a legend that explains the mapping between levels and values. <br> 
+
+We can also *set* the aesthetic properties of the geom manually. E.g. we can make all of the points of our plot blue
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
+```
+Here, the color doesn't convey information about a variable, but only changes the appearance of the plot. To set the aesthetics manually, set it outside of aes(). When doing this you need to pick a value that makes sense in the context of that aesthetic: <br> 
+- The name of a color as a character string <br> 
+- The size of a point in mm <br>
+- The shape of a point as a number, note that there are duplicates: 0,15,22 are all squares. The difference however is seen when looking at the interaction of the color and fill aesthetics. (0-14) are hollow shapes (border is determined by color), (15-18) are solid shapes (are filled with color), and (21-24) are filled shapes (have a border of color and are filled with fill) <br> 
+
+Exercises <br> 
+1. What's gone wrong with this code? Why are the points not blue? 
+```{r}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy, color = "blue"))
+```
+The color is being assigned within the aesthetics, in which case the argument color is expecting a variable, not a character string denoted as "blue". <br> 
+
+2. Which variables in mpg are categorical? Which variables are continuous? 
+```{r}
+?mpg
+# vars manufacturer, model, year, trans, drv, fl, class are all categorical 
+# vars displ, cyl, cty, hwy are all continuous 
+
+# We may also figure this out by just looking at the data briefly 
+head(mpg) # typically character strings are always going to be categorical. There are a few exceptional cases like year that can be argued to be categorical. 
+```
+3. Map a continuous variable to color, size, and shape. How do these aesthetics behave differently for categorical versus continuous variables. 
+```{r}
+ggplot(mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = cty))
+ggplot(mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, size = cty))
+# ggplot(mpg) + 
+#   geom_point(mapping = aes(x = displ, y = hwy, shape = cty)) # wont run due to shape not being able to be assigned to a continuous var 
+```
+Color and size operate on a gradient scale, while shape cannot plot with continuous data. 
+
+4. What happens if you map the same variable to multiple aesthetics?
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = drv, size = drv, shape = drv)) # meh lets remove size as thats not informative
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = drv, shape = drv))
+```
+You get multiple levels out of the same variable (e.g. different color and shape per level)
+
+5. What does the stroke aesthetic do? What shapes does it work with? 
+```{r}
+?geom_point
+```
+Allows for modifying the width of the border on shapes, only works for shapes that have a border 
+
+
