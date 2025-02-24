@@ -20,7 +20,7 @@ library(AHMbook)
 The outcome of stochastic processes known as point processes, we describe these with statistic models called point process models (PPMs). The metrics used in ecology to measure biodiversity: distribution, abundance, and species richness are all derivations of the fundamental point patterns. PPMs treat both the number and location of discrete points as random quantities governed by an underlying, continuous intensity field. The intensity is the expected number for points per unit area in some study area and is a modeled parameter. <br> 
 
 #### Spatial Point Patterns with Distribution and Abundance
-Distribution and Abundance metrics are really just areal summaries of the spatial point patterns aggregated and observed per taxa. The above function sim.fn() is a simulation that allows us to experiment with point processes and how the underlying patterns effect distributions/abundance measures. The key feature here is *intesity* of the pattern, which is something we'd expect to be the result of the biology (uncontrollable). Cell size is how big the cells making up the grid are, this is controllable (or dictated by the survey strategy). 
+Distribution and Abundance metrics are really just areal summaries of the spatial point patterns aggregated and observed per taxa. The function sim.fn() is a simulation that allows us to experiment with point processes and how the underlying patterns effect distributions/abundance measures. The key feature here is *intesity* of the pattern, which is something we'd expect to be the result of the biology (uncontrollable). Cell size is how big the cells making up the grid are, this is controllable (or dictated by the survey strategy). 
 ```{r}
 sim.fn(quad.size = 10, cell.size = 1, intensity = 1)
 ```
@@ -31,7 +31,7 @@ E.g.
 set.seed(82) # Set the seed for reproducible results 
 tmp <- sim.fn(quad.size = 16, cell.size = 2, intensity = 0.5)
 ```
-As we may not in the graphical output above, there is a deterministic relationship between a point pattern with abundance and distribution. Distribution really is just a certain spatial pattern of P/As. <br> 
+As we may note in the graphical output above, there is a deterministic relationship between a point pattern with abundance and distribution. Distribution really is just a certain spatial pattern of P/As. <br> 
 
 Breakdown: <br> 
 - In order to find abundance and occurrence, one must somehow spatially discretize the data aka make sites. Each site is represented by one cell throughout the entire grid. Think of the background continuous space as your geographic area where the study is taking place, and the cell be some breakdown of the space. <br>
