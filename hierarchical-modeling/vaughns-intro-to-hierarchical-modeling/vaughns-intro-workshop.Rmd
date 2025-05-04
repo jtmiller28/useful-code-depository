@@ -8,3 +8,188 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+### Workshop
+
+Modeling is all about taking the complicated large world and create representations of systems into mathemetical small worlds. The goal being that these small worlds are useful on the original big unwieldy systems. This is done via math as a percision language (though this should be creative). Ramifications in ethics are also important, these models influence how policy is made. 
+
+Hierarchical modeling:
+Multi-level Modeling: traditional mixed-effects models, phylogenetic-mixed models, etc. 
+Hierarchical Modleing: occupancy-detection models, n-mixture models, state-space models (broadly). 
+
+Multilevel Modeling
+Obj: Understand the relationsip between varaibles given non-independence in our underlying data. Our data has structure. 
+single level model: $$y = mx + b$$
+random intercepts: $$y = mx + b[sp]$$ where b is species specific
+^ Can be useful if you expect differences
+random slopes: $$ y = m[sp]x + b$$ where mx is species specific
+
+Hierarchical Modeling
+Obj: Understand the relationship between variables given a data-generating process that may obscure associations of interest
+- Underlying ecology is the goal, however we are imperfect observers in space and time. This observing is called the Observation Process. 
+- Underlying ecology + Obs process -> Biodiv data
+
+Hierarchical Modeling in Biodiversity Science
+sites-visits -> creates a detection matrix (seen, non-seen even if its an occupant). The question becomes whether in a site where we *havent* seen it, is it there? Low detection probability makes this challenging 
+
+Probability of Occupnacy (increases with sites), Probability of detection (increases with visits)
+Motivating Q: What is the probability that a species is an occupant of a location over space/time?
+$$logit(\psi site,year) ~ Ecological Predictors$$ 
+The logit means that we're streaching the function between 0 - 1. 
+$$logit(p site,year) ~ Observation Predictors$$
+$$ Y ~ psite,year x \psi site, year$$ Joint prob of two events occurring! Prob that it was there * we were there to witness them 
+
+Load packages
+```{r}
+library(unmarked)
+library(tidyverse)
+```
+
+```{r}
+my_dat <- read.csv("./data/blueMorphos.csv")
+head(my_dat)
+```
+Pull out our covariates
+We want to think about the detection process, this can include:
+- day of the year is probably important
+- effort spent (minutes) looking for butteryfly
+```{r}
+# extract ydate and minutes afternoon as a covariate
+my_dates <- as.matrix(my_dat[,10:15])
+my_mins <- as.matrix(my_dat[, 16:21])
+```
+
+We want to know whether the species prefers forest edges
+```{r}
+# extract edge habitat as a covariate
+my_edge <- my_dat[,c("forest_edge")]
+site = data.frame(my_edge)
+```
+
+Z score is a measure of how away from the Mean value you are in a distribution. High Z score means your on the tail ends of a distribution, low means your right near the Mean value
+
+Here, we're going to disentangle the measures of dates and minutes by converting them to both Zscores
+```{r}
+# standardize dates and minutes (z-score)
+mean.date = mean(my_dates, na.rm = TRUE)
+sd.date = sd(my_dates[!is.na(my_dates)])
+DATES = (my_dates-mean.date)/sd.date
+DATES[is.na(DATES)] = 0
+
+mean.mins = mean(my_mins, na.rm=TRUE)
+sd.mins = sd(my_mins[!is.na(my_mins)])
+MINS = (my_mins - mean.mins)/sd.mins
+MINS[is.na(MINS)] = 0
+```
+
+
+Assign covariates to Model
+```{r}
+dates = as.matrix(DATES)
+mins = as.matrix(MINS)
+dates.x = (dates)^2 # convert to quadratic to deal with a parabolic curve (what phenology MAY look like)
+mins.x = (mins)^2 # its unexplored to use different modalities...something to consider
+obs = list(date = dates, 
+           mins = mins, 
+           dates.2 = dates.x, 
+           mins.2 = mins.x)
+
+# bundle the date into an object that 'unmarked' can work with
+my_data_bundle <- unmarkedFrameOccu(y = my_dat[, 4:9], 
+                                    siteCovs = site, # forest edge or not 
+                                    obsCovs = obs # the things that effect our observation process
+                                    )
+
+summary(my_data_bundle)
+```
+We're fitting our occupancy models in frequentist methods
+```{r}
+# Run an occupancy model
+my_occu_fit <- occu(~date + dates.2 + mins + mins.2 ~ my_edge, # ecology flows into the detection process
+                    data = my_data_bundle) 
+
+summary(my_occu_fit)
+```
+The later in the season, the less likely we are to observe them. The more time we spend looking for it, the more likely we are to observe it
+
+Back transform!
+```{r}
+# Back-transform to get probability of occupancy given edge
+summary_possible_edge <- backTransform(linearComb(my_occu_fit, coefficients = c(1, 0), "state")) # model for where there is and isn't an edge
+summary_edge <- backTransform(linearComb(my_occu_fit, coefficients = c(1, 1), "state")) # model for where there are only edges
+```
+
+How many sites is this thing actually at?
+```{r}
+sum(bup(ranef(my_occu_fit), stat = "mode")) # if you were to resample, we'd expect 11 sites to have this organism present. 
+```
+
+
+
+MultiSpecies Occupancy Detection Models 
+Community or assemblage level approaches are increasingly common...
+Underlying Ecology: $$logit(\psi _{site,year,species}) ~ EcologicalPredictors_{species}$$
+Obs process: $$logit(p_{site,year,species}) ~ ObservationPredictors_{species}$$
+Biodiv data: $$ Y ~ P_{site,year,species} \times \psi_{site,year,species}$$
+
+When looking at a community, we should recongize that there non-independence between the members of the community (competition, possibly predation)
+
+```{r}
+data("MesoCarnivores")
+occList <- list(bobcat = MesoCarnivores$bobcat,
+                coyote = MesoCarnivores$coyote, 
+                redfox = MesoCarnivores$redfox)
+
+lapply(occList, head)
+
+my_data_bundle <- unmarkedFrameOccuMulti(y = occList, 
+                                         siteCovs = MesoCarnivores$sitecovs)
+
+# state = occupancy probability
+stateFormulas <- c("~scale(HDens_5km)", 
+                   "~scale(HDens_5km)", 
+                   "~scale(HDens_5km)", 
+                   "~1", # interaction bobcat x coyote (we expect an interaction, but its not mediated by the enviromental variable 
+                   "~1", # bobcat x redfox
+                   "~1",
+                   "0" # we dont expect a three way interaction 
+                   )
+detFormulas <- c("~1", "~1", "~1") # detection should not very per site
+
+my_occu_fit <- occuMulti(stateformulas = stateFormulas, 
+                         detformulas = detFormulas, 
+                         data = my_data_bundle)
+
+summary(my_occu_fit)
+```
+```{r}
+hdens_range <- range(siteCovs(my_data_bundle)$HDens_5km)
+hdens_seq <- seq(hdens_range[1], hdens_range[2], length.out=100)
+nd <- data.frame(HDens_5km = hdens_seq)
+
+occ_hdens_coy <- predict(my_occu_fit, type="state", species="coyote", newdata=nd)
+occ_hdens_coy$Species <- "Coyote"
+occ_hdens_coy$Hdens <- hdens_seq
+head(occ_hdens_coy)
+
+occ_hdens_bob <- predict(my_occu_fit, type="state", species="bobcat", newdata=nd)
+occ_hdens_fox <- predict(my_occu_fit, type="state", species="redfox", newdata=nd)
+occ_hdens_bob$Species <- "Bobcat"
+occ_hdens_fox$Species <- "Red Fox"
+occ_hdens_bob$Hdens <- hdens_seq
+occ_hdens_fox$Hdens <- hdens_seq
+
+my_preds <- do.call(rbind, list(occ_hdens_coy, occ_hdens_fox, occ_hdens_bob))
+
+ggplot() +
+  geom_ribbon(my_preds, 
+              mapping = aes(x = Hdens, ymin = lower, ymax = upper,
+                            fill = Species), alpha = 0.5) +
+  geom_line(my_preds, 
+            mapping = aes(x = Hdens, y = Predicted, color = Species), linewidth = 2) +
+  labs(x = "Housing Density", y = "Predicted Occupancy Probability") + 
+  theme_minimal()
+```
+in general, occupancy-detection models work great, especially in 'unmarked' 
+
+Dynamic Occupnacy Models Integrated Population Models: This is the method I should look at for colonization/expirtation. 

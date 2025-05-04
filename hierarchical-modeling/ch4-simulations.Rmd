@@ -17,7 +17,7 @@ $$
 N_i \sim Poisson(\lambda_i) \\
 log(\lambda_i) = \beta_0 + \beta_1*elev_i + \beta_2*forest_i + \beta_3*elev_i*forest_i
 $$
-Assume that the observation process is governed by imperfect detection only, and that false-positives are absent from the data. Detection will be based on the detection probability *p*, which is dependent on the one site covatiate elevation and on one site sampling covariate wind speed. We will ignore adding the interaction effect between windspeed and elevation. 
+Assume that the observation process is governed by imperfect detection only, and that false-positives are absent from the data. Detection will be based on the detection probability *p*, which is dependent on the one site covariate elevation and on one site sampling covariate wind speed. We will ignore adding the interaction effect between windspeed and elevation. 
 $$
 C_{ij} \sim Binomial(N_i,p_{ij}) \\
 
@@ -52,7 +52,7 @@ wind <- array(runif(n=M*J, -1,1), dim = c(M,J)) # scaled wind speed
 ### Simulating the ecological process and its outcome: great tit abundance 
 To simulate the abundance of the great tit at each site, we choose values for the parameters that govern the spatial variation in abundance from $\beta_0$ to $\beta_3$. <br>
 The first parameter is the average expected abundance on the log scale of great tits when all covariates have a value of zero - i.e. the intercept of the abundance model. <br> 
-Thinking of abundance first is a bit more intutive, so we'll think of it that way first and then link-transform that number. 
+Thinking of abundance first is a bit more intuitive, so we'll think of it that way first and then link-transform that number.
 ```{r}
 mean.lambda <- 2 # Mean expected abundance of great tits
 beta0 <- log(mean.lambda) # Same on logscale (=log-scale intercept)
@@ -75,6 +75,7 @@ text(-0.9, 17, "C", cex = 1.5)
 plot(forest, lambda, frame.plot=FALSE, ylim=c(0,38), xlab = "Forest Cover", ylab = "")
 text(-0.9,36, "D", cex=1.5)
 ```
+The above plots are two ways of showing the relationships between the expected abundance of great tits ($\lambda$) and the two site covariates: elevations and forest cover. <br>
 A. Relationship of lambda-elevation for a constant value of forest cover (at th average of zero) <br> 
 B. Relationship of lambda-elevation at the observed value of forest cover. <br>
 C. Relationship of lambda-forest cover for a constant value of elevation (at the average of zero) <br>
@@ -82,7 +83,7 @@ D. Relationship of lambda-forest cover at the observed value of elevation <br>
 
 Additionally we can better visualize the joint relationships between expected abundance, elevation, and forest cover by computing the expected abundance of great tits for a grid spanned by a range of observation values for both covariates and visualize the 3D relationships. 
 ```{r}
-# Compute expected abundance for a grid of elevation and forest cover
+# Compute expected abundance for a grid of elevation and forest cover, note this is for building a visual, we dont actually change the underlying simulation at all.
 cov1 <- seq(-1,1,, 100) # Values for elevation
 cov2 <- seq(-1,1,,100) # Values for forest cover 
 
@@ -101,7 +102,8 @@ contour(x = cov1, y = cov2, z = lambda.matrix, add = TRUE, lwd = 1)
 matpoints(elev, forest, pch = "+", cex = 0.8) # add observed cov values 
 
 ```
-The expected abundance of great tits $\lambda$ and elevation adnd forest cover simultaneously. As we have high forest cover and low elevation we expect higher abundance of the bird. <br>
+The expected abundance of great tits $\lambda$ and elevation and forest cover simultaneously. As we have high forest cover and low elevation we expect higher abundance of the bird. Note that the curves indicate an interaction between the covariates (as we set them up that way), if we hadn't set an interaction term these contours would be straight lines. <br>
+
 
 So far there is no Stochasticity built into the relationships between great tit abundance and the covariates. We need to adopt some sort of statistics model or distribution to describe the random variability around the expected value $\lambda$. <br>
 
@@ -142,6 +144,213 @@ curve(plogis(alpha0 + alpha1*x), -1, 1, col = "red", frame.plot = FALSE, ylim = 
 text(-0.9, 1.05, "A", cex = 1.5)
 matplot(elev, p, pch = "*", frame.plot=FALSE, ylim = c(0,1.1), xlab = "Elevation", ylab = "")
 text(-0.9, 1.05, "B", cex = 1.5)
-matplot(elev, p, pch = "*", frame.plot = FALSE, ylim = c(0, 1.1), xlab = "Elevation", ylab = "")
+curve(plogis(alpha0 + alpha2*x), -1, 1, col = "red", frame.plot = FALSE, ylim = c(0, 1.1), 
+      xlab = "Wind Speed", ylab = "p", lwd = 2)
+text(-0.9, 1.05, "C", cex = 1.5)
+matplot(wind, p, pch="*", frame.plot = FALSE, ylim = c(0, 1.1), xlab = "Wind Speed", ylab = "p")
+text(-0.9, 1.05, "D", cex = 1.5)
+
+```
+Above is the two ways of depicting relationships between the expected detection probability of an individual great tit (p) and the two covariates elevation & windspeed. <br> 
+a) the relationship of p-elevation for a constant value of wind speed (at avg zero) <br>
+b) the relationship of p-elevation at the observed value of wind speed. <br> 
+c) the relationship of p-wind speed for a constant value of elevation (at avg zero) <br>
+d) the relationship of p-wind speed at the observed value of elevation. <br>
+
+Also a closer look at how the covariate wind does not interact with elevation
+```{r}
+# comput eexpected detection probability for a grid of elevation and windspeed.
+cov1 <- seq(-1, 1,, 100) # values of elevation
+cov2 <- seq(-1,1,,100) # values of wind speed
+p.matrix <- array(NA, dim = c(100,100)) # Prediction matrix which combines every value in cov1 with every other value in cov2
+for(i in 1:100){
+  for(j in 1:100){
+    p.matrix[i,j] <- plogis(alpha0 + alpha1 * cov1[i] + alpha2*cov2[j] + alpha3*cov1[i]*cov2[j])
+  }
+}
+image(x = cov1, y = cov2, z = p.matrix, col = mapPalette(100), xlab = "Elevation", ylab = "Wind Speed", cex.lab = 1.2)
+contour(x = cov1, y = cov2, z = p.matrix, add = TRUE, lwd = 1)
+matpoints(elev, wind, pch="+", cex = 0.7, col = "black") # covariate values in dataset 
+```
+When "measuring" abundance, imperfect detection represents a binomial measurement error mechanism, i.e. each great tit is either detected with probability p or not detected with probability 1-p. We can apply this observation process now to produce replicate tit counts for each site. 
+```{r}
+C <- matrix(NA, nrow = M, ncol = J) # Prepare array for counts
+# Generate counts
+for(i in 1:J){
+  C[,i] <- rbinom(n = M, size = N, prob = p[,i])
+}
+
+# display measures of sites (rows), replicated surveys (the cols), and the true abundance of tits 
+head(cbind("True N" = N, "1st Count" = C[,1], "2nd Count" = C[,2], "3rd Count" = C[,3]), 10)
+```
+```{r}
+par(mfrow=c(2,2), mar = c(5,4,2,2), cex.main = 1)
+matplot(elev, C, pch = "*", frame.plot = FALSE, ylim = c(0,38), xlab = "Elevation", ylab = "Count (C)")
+text(-0.9, 36, "A", cex = 1.5)
+matplot(forest, C, pch = "*", frame.plot = FALSE, ylim = c(0,38), xlab = "Forest Cover", ylab = "Count (C)")
+text(-0.9, 36, "B", cex = 1.5)
+matplot(wind, C, pch = "*", frame.plot = FALSE, ylim = c(0,38), xlab = "Wind Speed", ylab = "Count (C)")
+text(-0.9, 36, "C", cex = 1.5)
+hist(C, breaks = 50, col = "grey", ylim = c(0,460), main = "", xlab = "Count (C)")
+text(3,450, "D", cex = 1.5)
+```
+Above are the relationships between the observed counts of great tits (C) and the three scaled covariates elevation (A), forest cover (B), wind speed (C); and the frequency distribution of the observed counts in the simulated data for 267 sites with three surveys each (D). Different colors in A-C represent different temporal replicates (surveys) <br> 
+
+With all of this, we have created a dataset where counts of great tits C are negatiely related to elevation and wind speed and positively related to forest cover. <br> 
+
+Site abundance, the target of ecological inference, is affected by forest cover and elevation, but not by wind speed. Detection probability, the parameter that characterizes the measurement error process when measuring abundance, is also affected by elevation, but also wind speed. <br>
+
+Thus, it can be challenging to disentangle the reasons for spatiotemporal variation in observed counts, since they can be affected by two entirely different processes: ecological and observational. <br> 
+
+We can characterize the effects of imperfect detection in two ways: <br>
+1. Perceived abundance <br>
+2. Perceived occurrence <br>
+```{r}
+sum(N) # True Total Abundance (All sites)
+sum(apply(C, 1, max)) # 'Observed' total abundance (All sites)
+```
+It becomes apparent that we have the 'detection-naive' estimate readily availableby combining all 267 site counts. Further, we could do a combined estimation error, where treating counts as estimates of abundance 
+```{r}
+(sum(N) - sum(apply(C, 1, max)))/sum(N) * 100 # (True Abundance - Obs Abundance / True Abundance) * 100
+```
+Representing an underestimation of the true great tit's population by ~42%. 
+
+Occurrence or "presence" which is the 'unit' of species distribution studies, denotes the case that N_i > 0 (meaning that abudnance at site i is greater than zero). 
+```{r}
+sum(N>0) # the true number of occupied sites
+sum(apply(C,1,max)>0) # the 'observed' number of occupied sites
+```
+And the associated error with the estimation of the occurrence of the great tit across our sites
+```{r}
+(sum(N>0) - sum(apply(C,1,max)>0))/sum(N>0) * 100 
+```
+about 10%, which is much less than the total error of the abundance measurement. 
+
+## Package everything into a function
+The pros are obvious, its much easier to repeat the simulation, and is clear what parameters we're changing. 
+```{r}
+# function definition with set of default values
+data.fn <- function(M = 267, J = 3, mean.lambda = 2, beta1 = -2, beta2 = 2, beta3 = 1, 
+                    mean.detection = 0.3, alpha1 = 1, alpha2 = 3, alpha3 = 0, show.plot = TRUE){
+  # function to simulate point counts replicated at M sites during J occasions 
+  # population closure is assumed for each site
+  # expected abundance may be affected by elevation (elev) 
+  # forest cover (forest) and their interactions
+  # expected detection probability may be affected by elevation.
+  # wind speed (wind) and their interaction 
+  # function arguments
+  #   M: Number of spatial replicates (sites)
+  #   J: Number of temporal replicates (occasions)
+  #   mean.lambda: Mean abundance at value 0 of abudance and covariates
+  #   beta1: Main effect of elevation on abundance 
+  #   beta2: Main effect of forest cover on abundance
+  #   beta3: Interaction effect of abundance of elevation and forest cover
+  #   mean.detection: Mean detection prob. at value 0 of detection covariates 
+  #   alpha1: Main effect of elevation on detection probability 
+  #   alpha2: Main effect of wind speed on detection probability 
+  #   alpha3: Interaction effect on detection of elevation and wind speed
+  #   show.plot: if TRUE, plots of the data will be displayed; set to FALSE if you are running simulations
+  # Create covariates
+  elev <- runif(n = M, -1,1) # scaled elevation
+  forest <- runif(n = M, -1,1) # scaled forest cover
+  wind <- array(runif(n = M*J, -1,1), dim = c(M,J)) # scaled wind speed
+  # Model for abundance 
+  beta0 <- log(mean.lambda) # Mean abundance on link scale
+  lambda <- exp(beta0 + beta1*elev + beta2*forest + beta3*elev*forest) 
+  N <- rpois(n = M, lambda = lambda) # Realized abundance 
+  Ntotal <- sum(N) # Total Abundance (all sites)
+  psi.true <- mean(N>0) # True Occupancy in sample
+  # Plots 
+  if(show.plot){
+    par(mfrow = c(2,2), cex.main = 1)
+    devAskNewPage(ask = TRUE)
+    curve(exp(beta0 + beta1*x), -1,1, col = "red", main = "Relationship lambda-elevation \nat average forest cover", frame.plot = F, xlab = "Scaled Elevation")
+    plot(elev, lambda, xlab = "Scaled elevation", main = "Relationship lambda-elevation \nat observed forest cover", frame.plot = F)
+    curve(exp(beta0 + beta2*x), -1,1, col = "red", main = "Relationship lambda-forest \ncover at average elevation", xlab = "Scaled forest cover", frame.plot = F)
+    plot(forest, lambda, xlab = "Scaled forest cover", main = "Relationship lambda-forest cover \nat observed elevation", frame.plot = F)
+  }
+    # Model for observations
+    alpha0 <- qlogis(mean.detection) # mean detection on link scale 
+    p <- plogis(alpha0 + alpha1*elev + alpha2*wind + alpha3*elev*wind)
+    C <- matrix(NA, nrow = M, ncol = J) # prepare matrix for counts
+    for(i in 1:J){ # generate counts by survey
+      C[,i] <- rbinom(n=M, size = N, prob = p[,i])
+    }
+    summaxC <- sum(apply(C,1,max)) # Sum of max counts (all sites)
+    psi.obs <- mean(apply(C,1,max) > 0) # Observed occupancy in sample 
+    # More plots 
+    if(show.plot){
+      par(mfrow = c(2,2))
+      curve(plogis(alpha0 + alpha1*x), -1,1, col = "red", main = "Relationship p-elevation \nat average wind speed", xlab = "Scaled elevation", frame.plot = F)
+      matplot(elev, p, xlab = "Scaled elevation", main = "Relationship p-elevation \nat observed wind speed", pch = "*", frame.plot = F)
+      curve(plogis(alpha0 + alpha2*x), -1,1, col = "red", main = "Relationship p-wind spee \nat average elevation", xlab = "Scaled wind speed", frame.plot = F)
+      matplot(wind, p, xlab = "Scaled wind speed", main = "Relationship p-wind speed \nat observed elevation", pch = "*", frame.plot = F)
+      
+      matplot(elev, C, xlab = "Scaled elevation", main = "Relationship counts and elevation", pch = "*", frame.plot = F)
+      matplot(forest, C, xlab = "Scaled forest cover", main = "Relationship counts and forest cover", pch = "*", frame.plot = F)
+      matplot(wind, C, xlab = "Scaled wind speed", main = "Relationship counts and wind speed", pch = "*", frame.plot = F)
+      desc <- paste('Counts at', M, 'sites during', J, 'surveys')
+      hist(C, main = desc, breaks = 50, col = "grey")
+    }
+    # Output 
+    return(list(M = M, J = J, mean, lambda = mean.lambda, beta0 = beta0, beta1 = beta1, beta2 = beta2, beta3 = beta3, mean.detection = mean.detection, alpha0 = alpha0, alpha1 = alpha1, alpha2 = alpha2, alpha3 = alpha3, elev = elev, forest = forest, wind = wind, lambda = lambda, N = N, p = p, C = C, Ntotal = Ntotal, psi.true = psi.true, summaxC = summaxC, psi.obs = psi.obs))
+}
+
+```
+Now we can call said function
+```{r}
+data.fn() # exectute function with default arguments
+data.fn(show.plot = FALSE) # same without plots
+data.fn(M = 267, J = 3, mean.lambda = 2, beta1 = -2, beta2= 2, beta3 = 1, mean.detection = 0.3, alpha1 = 1, alpha2 = -3, alpha3 = 0) # make defaults explicit
+data <- data.fn() # assign results to an object called data
+
+```
+One use of this function is understanding our model's sampling error. There is natural variability of repeated realizations from our stochastic process. Lets look at how 10,000 simulation vary in terms of the true population size of great tits (Ntotal) and the next-best observed thing: the sum of the max counts of tits (summaxC)
+```{r}
+simrep <- 10000 # Simulate 10,000 times
+NTOTAL <- SUMMAXC <- numeric(simrep)
+for(i in 1:simrep){
+  data <- data.fn(show.plot = FALSE)
+  NTOTAL[i] <- data$Ntotal
+  SUMMAXC[i] <- data$summaxC
+}
+plot(sort(NTOTAL), ylim = c(min(SUMMAXC), max(NTOTAL)), ylab = "", xlab = "Simulation", col = "red", frame = FALSE)
+points(SUMMAXC[order(NTOTAL)], col = "blue")
+```
+Above illustrates the sampling error (natural variability) of the total population size (Ntotal), ordered by size (in red), and the sum of the maximum counts over all sites (summaxC in blue) in a simulated great tit population. Its rather apparent that summaxC is not an unbiased estimator of Ntotal for this finite number of surveys. <br>
+
+Further, we can use the function to generate datasets under various sampling designs, such as the number of sites or surveys
+```{r}
+data.fn(J = 2) # Only two surveys
+data.fn(J = 1) # No temporal replicate
+data.fn(M = 1, J = 100) # No spatial replicates, but 100 counts
+data.fn(beta3 = 1) # With interaction elev-wind on p
+data.fn(M = 267, J = 3, mean.lambda = 2, beta1 = -2, beta2 = 2, beta3 = 1, mean.detection = 1) # No obs process (i.e. p = 1, perfect detection)
+data.fn(mean.lambda = 50) # really common species 
+data.fn(mean.lambda = 0.05) # really rare species 
+
+```
+On every function execution, we get a different realization from the random process defined in the function. If we wanted the same data everytime, we could set the seed
+```{r}
+set.seed(24)
+data <- data.fn(show.plot = FALSE)
+str(data)
+```
+To make the objects inside the list directly accessible to R, without having to extract via data$ , you can attach data to the search path
+```{r}
+data <- data[-3] # remove unnamed fxn
+attach(data) # Make the objects inside of data accessible directly
+# note taht masked vars will exist if there are things in your enviroment with the same var names
+detach(data) # clean up, make sure to detach data after use 
+```
+Exercises <br> 
+1. *Sampling error*: Simulate count data with p = 1 and a single temporal replicate (and default function arguments otherwise). Fit the data-generating model using R function glm, and observe how variable the estimates are (perhaps run 1000 simulation replicates). This is sampling error and is quantified by the standard error of the estimates. 
+```{r}
+data <- data.fn(J = 1, mean.detection = 1, show.plot = FALSE)
+str(data)
+data <- data[-3] # remove function summary
+summary(fmPois <- glm(C ~ elev*forest, family = poisson, data = data))
+presence <- ifelse(data$C > 0, 1, 0)
+summary(fmBern <- glm(presence ~ elev*forest, family = binomial(link = "cloglog"), data = data))
 ```
 
